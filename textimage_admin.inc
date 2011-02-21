@@ -57,6 +57,7 @@ function textimage_settings_form_validate($form, &$form_state) {
   }
 }
 
+/*
 function textimage_preset_edit(&$form_state, $op, $pid = NULL) {
   $preset = array();
   $image_presets = array();
@@ -469,6 +470,9 @@ function textimage_preset_edit(&$form_state, $op, $pid = NULL) {
 
   return $form;
 }
+*/
+
+
 
 function theme_textimage_preset_edit(&$form) {
   drupal_add_css(drupal_get_path('module', 'textimage') . '/misc/css/textimage_admin.css');
@@ -514,6 +518,7 @@ function textimage_preset_edit_submit($form, &$form_state) {
   }
 }
 
+/*
 function textimage_preset_list() {
   $fonts_path = variable_get('textimage_fonts_path', drupal_get_path('module', 'textimage') . '/fonts');
   $presets = textimage_get_presets();
@@ -540,6 +545,8 @@ function textimage_preset_list() {
 
   return theme('table', $header, $rows);
 }
+*/
+
 
 function textimage_preset_delete_confirm(&$form_state, $pid) {
   $preset = _textimage_preset_load($pid);
@@ -581,6 +588,7 @@ function textimage_preset_flush_confirm_submit($form, &$form_state) {
   drupal_goto('admin/build/textimage/preset/list');
 }
 
+/*
 function textimage_get_presets() {
   static $presets = array();
 
@@ -595,6 +603,7 @@ function textimage_get_presets() {
 
   return $presets;
 }
+*/
 
 /**
  * create a preset
