@@ -41,66 +41,49 @@ define('ALIGN_RIGHT', 3);
 /**
  * Implementation of hook_help().
  */
-function textimage_help($path, $arg) {
-  $output = "";
+function textimage_help($path, $arg){
+	$output = "";
 
-  switch ($path) {
-    case 'admin/help#textimage':
-      $output = '
-        <h2 id="textimage-introduction">The dynamic text to image generator!</h2>
-        <p>
-          Textimage adds text to image functionality using GD2 and Freetype, enabling users to create crisp images on the fly for use as theme objects, headings or limitless other possibilities.
-        </p>
-        <h2>Installing Fonts</h2>
-        <p>
-          Before you can begin using Textimage you must upload at least one TrueType or OpenType font to the server and tell Textimage where you uploaded it. Fonts must have a .tff or .otf extension to be seen by Textimage. If you do not have any TrueType or OpenType fonts, you can download some free GNU fonts from the <a href="http://savannah.nongnu.org/projects/freefont/">Free UCS Outline Fonts Project</a>. Once the fonts are uploaded, enter the UNIX-style path the fonts on the <a href="!config">configuration page</a>.
-        </p>
-        <h2 id="textimage-configuration">Configuration</h2>
-        <p>
-          The basis of Textimage is made of configuration options called <em>presets</em>. A preset defines what font, size, color, etc. should be used in the generated image. You can create new presets on the <a href="!presets">presets page</a>. Most options are pretty self explanatory, but background images can get pretty complicated if you begin to use other presets as backgrounds. Let\'s run through an example.
-        </p>
-        <p>
-          If you specified a backgrounds directory on the main configuration page, a list of backgrounds is automatically popuplated into the Background Image select list. Let\'s say there\'s a image called &quot;header.png&quot; in the image list that looks like this:
-        </p>
-        <p>
-          <img src="!example1" alt="example1" />
-        </p>
-        <p>
-          Now we\'ll create a preset called &quot;preset1&quot;. In this preset, set the font to Braggadocio (not included), 54px, #FFFFFF (white) color. Select header.png from the background list and position the text at x-offset 14 and y-offset 22 (in pixels). After the preset is saved, Textimage is now ready to automatically generate images based on text strings. You could directly visit the image at {files}/textimage/preset1/Hello.png (where {files} is your sites file directory) and get the following result:
-        </p>
-        <p>
-          <img src="!example2" alt="example2" />
-        </p>
-        <p>
-          To get crazy now, create a new preset called &quot;preset2&quot;. In this preset, set the font to Century (also not included), 20px, #000000 (black) color. Select <em>preset1</em> from the background list and position the text at x-offset 14 and y-offset 94. Save the preset then visit {files}/textimage/preset2/Hello/world!.png and get the following result:
-        </p>
-        <p>
-          <img src="!example3" alt="example3" />
-        </p>
-        <p>
-          The entire preset1 is generated using the first argument <em>Hello</em>. Then preset2 is generated using the name of the file <em>world!.png</em>. You could continue chaining presets together over and over again.
-        </p>
-        <h2>File Names and Storage</h2>
-        <p>
-          Textimage supports .png, .gif, and .jpg input and output files. You can change the output format of the image simply by changing the extension of the last file. In the above example we made PNG images. If we had appended it with .jpg, a JPG image would have been created. Only PNG and GIF files support transparent backgrounds.
-        </p>
-      ';
 
-      $output = t($output, array(
-        '!config' => url('admin/build/textimage/settings'),
-        '!presets' => url('admin/build/textimage/presets'),
-        '!example1' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example1.png',
-        '!example2' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example2.png',
-        '!example3' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example3.png',
-      ));
-      break;
+	switch($path){
+		case 'admin/help#textimage':
+			$output = '
+				<h2 id="textimage-introduction">The dynamic text to image generator!</h2>
+				<p>Textimage adds text to image functionality using GD2 and Freetype, enabling users to create crisp images on the fly for use as theme objects, headings or limitless other possibilities.</p>
+				
+				<h2>Installing Fonts</h2>
+				<p>Before you can begin using Textimage you must upload at least one TrueType or OpenType font to the server and tell Textimage where you uploaded it. Fonts must have a .tff or .otf extension to be seen by Textimage. If you do not have any TrueType or OpenType fonts, you can download some free GNU fonts from the <a href="http://savannah.nongnu.org/projects/freefont/">Free UCS Outline Fonts Project</a>. Once the fonts are uploaded, enter the UNIX-style path the fonts on the <a href="!config">configuration page</a>.</p>
+				
+				<h2 id="textimage-configuration">Configuration</h2>
+				<p>The basis of Textimage is made of configuration options called <em>presets</em>. A preset defines what font, size, color, etc. should be used in the generated image. You can create new presets on the <a href="!presets">presets page</a>. Most options are pretty self explanatory, but background images can get pretty complicated if you begin to use other presets as backgrounds. Let\'s run through an example.</p>
+				<p>If you specified a backgrounds directory on the main configuration page, a list of backgrounds is automatically popuplated into the Background Image select list. Let\'s say there\'s a image called &quot;header.png&quot; in the image list that looks like this:</p>
+				<p><img src="!example1" alt="example1" /></p>
+				<p>Now we\'ll create a preset called &quot;preset1&quot;. In this preset, set the font to Braggadocio (not included), 54px, #FFFFFF (white) color. Select header.png from the background list and position the text at x-offset 14 and y-offset 22 (in pixels). After the preset is saved, Textimage is now ready to automatically generate images based on text strings. You could directly visit the image at {files}/textimage/preset1/Hello.png (where {files} is your sites file directory) and get the following result:</p>
+        		<p><img src="!example2" alt="example2" /></p>
+				<p>To get crazy now, create a new preset called &quot;preset2&quot;. In this preset, set the font to Century (also not included), 20px, #000000 (black) color. Select <em>preset1</em> from the background list and position the text at x-offset 14 and y-offset 94. Save the preset then visit {files}/textimage/preset2/Hello/world!.png and get the following result:</p>
+        		<p><img src="!example3" alt="example3" /></p>
+        		<p>The entire preset1 is generated using the first argument <em>Hello</em>. Then preset2 is generated using the name of the file <em>world!.png</em>. You could continue chaining presets together over and over again.</p>
+        		
+				<h2>File Names and Storage</h2>
+				<p>Textimage supports .png, .gif, and .jpg input and output files. You can change the output format of the image simply by changing the extension of the last file. In the above example we made PNG images. If we had appended it with .jpg, a JPG image would have been created. Only PNG and GIF files support transparent backgrounds.</p>
+      		';
 
-    case 'admin/build/modules#description':
-    case 'admin/build/modules/textimage':
-    case 'admin/build/textimage':
-      $output = t('Provides text to image manipulations.');
-      break;
+			$output = t($output, array(
+				'!config' => url('admin/build/textimage/settings'),
+				'!presets' => url('admin/build/textimage/presets'),
+				'!example1' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example1.png',
+				'!example2' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example2.png',
+				'!example3' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example3.png',
+			));
+		break;
+
+		case 'admin/build/modules#description':
+		case 'admin/build/modules/textimage':
+		case 'admin/build/textimage':
+			$output = t('Provides text to image manipulations.');
+		break;
   }
+
   return $output;
 }
 
@@ -147,13 +130,13 @@ function textimage_theme() {
  * Implementation of hook_menu().
  */
 function textimage_menu() {
-  $items = array();
+	$items = array();
 
-  $items[file_directory_path() . '/textimage'] = array(
-    'page callback' => 'textimage_image',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-  );
+	$items[file_build_uri('/textimage')] = array(
+		'page callback' => 'textimage_image',
+		'access arguments' => array('access content'),
+		'type' => MENU_CALLBACK,
+	);
 
   $items['admin/build/textimage'] = array(
     'title' => 'Textimage',
