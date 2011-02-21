@@ -138,21 +138,23 @@ function textimage_menu() {
 		'type' => MENU_CALLBACK,
 	);
 
-  $items['admin/build/textimage'] = array(
-    'title' => 'Textimage',
-    'description' => 'Configure text to image preset functions.',
-    'page callback' => 'textimage_preset_list',
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM
-  );
-  $items['admin/build/textimage/preset'] = array(
-    'title' => 'Presets',
-    'type' => MENU_DEFAULT_LOCAL_TASK
-  );
-  $items['admin/build/textimage/preset/list'] = array(
-    'title' => 'List',
-    'type' => MENU_DEFAULT_LOCAL_TASK
-  );
+	$items['admin/build/textimage'] = array(
+		'title' => 'Textimage',
+		'description' => 'Configure text to image preset functions.',
+		'page callback' => 'textimage_preset_list',
+		'access arguments' => array('administer site configuration'),
+		'type' => MENU_NORMAL_ITEM
+	);
+  
+	$items['admin/build/textimage/preset'] = array(
+		'title' => 'Presets',
+		'type' => MENU_DEFAULT_LOCAL_TASK
+	);
+	
+	$items['admin/build/textimage/preset/list'] = array(
+		'title' => 'List',
+		'type' => MENU_DEFAULT_LOCAL_TASK
+	);
 
   $items['admin/build/textimage/preset/new'] = array(
     'title' => 'New',
