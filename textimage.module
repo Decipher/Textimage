@@ -90,28 +90,29 @@ function textimage_help($path, $arg){
 /**
  * Implementation of hook_theme().
  */
-function textimage_theme() {
-  $theme = array(
-    'textimage_image' => array(
-      'arguments' => array(
-        'preset',
-        'text',
-        'additional_text' => array(),
-        'format' => 'png',
-        'alt' => '',
-        'title' => '',
-        'attributes' => array(),
-        'getsize' => TRUE,
-        'image' => TRUE,
-      ),
-    ),
+function textimage_theme(){
+	
+	$theme = array(
+		'textimage_image' => array(
+			'variables' => array(
+				'preset',
+				'text',
+				'additional_text' => array(),
+				'format' => 'png',
+				'alt' => '',
+				'title' => '',
+				'attributes' => array(),
+				'getsize' => TRUE,
+				'image' => TRUE,
+			),
+		),
 
-    'textimage_preset_edit' => array(
-      'arguments' => array(
-        'form' => array(),
-      ),
-    )
-  );
+		'textimage_preset_edit' => array(
+			'variables' => array(
+				'form' => array(),
+			),
+    	)
+	);
 
 	module_load_include('inc', 'textimage', 'textimage_admin');
 
