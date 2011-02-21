@@ -1,0 +1,5 @@
+// $Id: CHANGELOG.txt,v 1.1 2009/05/14 03:53:24 deciphered Exp $
+
+Textimage 7.x-2.x-dev, xxxx-xx-xx (development release)
+-----------------------------
+
