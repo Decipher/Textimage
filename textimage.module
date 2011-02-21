@@ -128,15 +128,17 @@ function textimage_theme() {
     )
   );
 
-  module_load_include('inc', 'textimage', 'textimage_admin');
-  foreach (textimage_get_presets() as $preset) {
-    $theme['textimage_formatter_textimage_' . $preset->name] = array(
-      'arguments' => array('element' => NULL),
-      'function' => 'theme_textimage_formatter',
-    );
-  }
+	module_load_include('inc', 'textimage', 'textimage_admin');
 
-  return $theme;
+	/*
+	foreach (textimage_get_presets() as $preset) {
+		$theme['textimage_formatter_textimage_' . $preset->name] = array(
+			'arguments' => array('element' => NULL),
+			'function' => 'theme_textimage_formatter',
+		);
+	}
+	*/
+	return $theme;
 }
 
 /**
