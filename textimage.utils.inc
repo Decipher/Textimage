@@ -180,6 +180,29 @@ if (!function_exists('imagerotate')) {
 
 
 
+/**
+ * This function adds a margin (or border) around an existing image resource
+ */
+
+function textimage_image_add_margin($img, $margin) {
+  $width = imagesx($img);
+  $height = imagesy($img);
+
+  // Create a new image for the background
+  $back_img = imagecreatetruecolor($width + $margin['right'] + $margin['left'], $height + $margin['top'] + $margin['bottom']);
+  $back = imagecolorallocatealpha($back_img, 0, 0, 0, 127);
+  imagefill($back_img, 0, 0, $back);
+
+  // Apply the source image ontop the background with the new margin
+  imagecopy($back_img, $img, $margin['left'], $margin['top'], 0, 0, $width, $height);
+  imagealphablending($back_img, TRUE);
+  imagesavealpha($back_img, TRUE);
+
+  return $back_img;
+}
+
+
+
 
 /**
  *  Convert a hex color representation to it's rgb integer components.

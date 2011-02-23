@@ -116,14 +116,14 @@ function textimage_theme(){
 
 	module_load_include('inc', 'textimage', 'textimage.admin');
 
-	/*
+	
 	foreach (textimage_get_presets() as $preset) {
 		$theme['textimage_formatter_textimage_' . $preset->name] = array(
 			'arguments' => array('element' => NULL),
 			'function' => 'theme_textimage_formatter',
 		);
 	}
-	*/
+	
 	return $theme;
 }
 
@@ -151,65 +151,66 @@ function textimage_menu() {
 	$items['admin/config/textimage/preset'] = array(
 	    'title' => 'Presets',
 	    'type' => MENU_DEFAULT_LOCAL_TASK
-	  );
-	  $items['admin/config/textimage/preset/list'] = array(
-	    'title' => 'List',
-	    'type' => MENU_DEFAULT_LOCAL_TASK
-	  );
+	);
+	  
+	$items['admin/config/textimage/preset/list'] = array(
+		'title' => 'List',
+		'type' => MENU_DEFAULT_LOCAL_TASK
+	);
 
-	  $items['admin/config/textimage/preset/new'] = array(
-	    'title' => 'New',
-	    'page callback' => 'drupal_get_form',
-	    'page arguments' => array('textimage_preset_edit', 'new'),
-	    'access arguments' => array('administer site configuration'),
-	    'weight' => 1,
-	    'type' => MENU_LOCAL_TASK,
-	    'file' => 'textimage.admin.inc'
-	  );
+	$items['admin/config/textimage/preset/new'] = array(
+		'title' => 'New',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('textimage_preset_edit', 'new'),
+		'access arguments' => array('administer site configuration'),
+		'weight' => 1,
+		'type' => MENU_LOCAL_TASK,
+		'file' => 'textimage.admin.inc'
+	);
 
-	  $items['admin/config/textimage/preset/%/edit'] = array(
-	    'title' => 'Edit Preset',
-	    'page callback' => 'drupal_get_form',
-	    'page arguments' => array('textimage_preset_edit', 'edit', 4),
-	    'access arguments' => array('administer site configuration'),
-	    'type' => MENU_CALLBACK,
-	    'file' => 'textimage.admin.inc'
-	  );
+	$items['admin/config/textimage/preset/%/edit'] = array(
+		'title' => 'Edit Preset',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('textimage_preset_edit', 'edit', 4),
+		'access arguments' => array('administer site configuration'),
+		'type' => MENU_CALLBACK,
+		'file' => 'textimage.admin.inc'
+	);
 
-	  $items['admin/config/textimage/preset/%/delete'] = array(
-	    'title' => 'Edit Preset',
-	    'load arguments' => array(4),
-	    'page callback' => 'drupal_get_form',
-	    'page arguments' => array('textimage_preset_delete_confirm', 4),
-	    'access arguments' => array('administer site configuration'),
-	    'type' => MENU_CALLBACK,
-	    'file' => 'textimage.admin.inc'
-	  );
+	$items['admin/config/textimage/preset/%/delete'] = array(
+		'title' => 'Edit Preset',
+		'load arguments' => array(4),
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('textimage_preset_delete_confirm', 4),
+		'access arguments' => array('administer site configuration'),
+		'type' => MENU_CALLBACK,
+		'file' => 'textimage.admin.inc'
+	);
 
-	  $items['admin/config/textimage/preset/%/flush'] = array(
-	    'title' => 'Flush Preset Cache',
-	    'load arguments' => array(4),
-	    'page callback' => 'drupal_get_form',
-	    'page arguments' => array('textimage_preset_flush_confirm', 4),
-	    'access arguments' => array('administer site configuration'),
-	    'type' => MENU_CALLBACK,
-	  );
+	$items['admin/config/textimage/preset/%/flush'] = array(
+		'title' => 'Flush Preset Cache',
+		'load arguments' => array(4),
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('textimage_preset_flush_confirm', 4),
+		'access arguments' => array('administer site configuration'),
+		'type' => MENU_CALLBACK,
+	);
 
-	  $items['admin/config/textimage/settings'] = array(
-	    'title' => 'Settings',
-	    'page callback' => 'drupal_get_form',
-	    'page arguments' => array('textimage_settings_form'),
-	    'access arguments' => array('administer site configuration'),
-	    'weight' => 0,
-	    'type' => MENU_LOCAL_TASK,
-	    'file' => 'textimage.admin.inc'
-	  );
+	$items['admin/config/textimage/settings'] = array(
+		'title' => 'Settings',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('textimage_settings_form'),
+		'access arguments' => array('administer site configuration'),
+		'weight' => 0,
+		'type' => MENU_LOCAL_TASK,
+		'file' => 'textimage.admin.inc'
+	);
 
-  $items['js/textimage'] = array(
-    'page callback' => 'textimage_js',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-  );
+	$items['js/textimage'] = array(
+		'page callback' => 'textimage_js',
+		'access arguments' => array('access content'),
+		'type' => MENU_CALLBACK,
+	);
 
   return $items;
 }
@@ -218,12 +219,12 @@ function textimage_menu() {
  * Implementation of hook_perm().
  */
 function textimage_perm() {
-  return array(
-    'create textimages' => array(
-      'title' => t('Create Textimages'),
-      'description' => t('Create Textimages'),
-    )
-  );
+	return array(
+		'create textimages' => array(
+			'title' => t('Create Textimages'),
+			'description' => t('Create Textimages'),
+		)
+	);
 }
 
 /**
@@ -451,25 +452,6 @@ function textimage_image_from_preset($preset, $text, $additional_text = array())
   return $img;
 }
 
-/**
- * This function adds a margin (or border) around an existing image resource
- */
-function textimage_image_add_margin($img, $margin) {
-  $width = imagesx($img);
-  $height = imagesy($img);
-
-  // Create a new image for the background
-  $back_img = imagecreatetruecolor($width + $margin['right'] + $margin['left'], $height + $margin['top'] + $margin['bottom']);
-  $back = imagecolorallocatealpha($back_img, 0, 0, 0, 127);
-  imagefill($back_img, 0, 0, $back);
-
-  // Apply the source image ontop the background with the new margin
-  imagecopy($back_img, $img, $margin['left'], $margin['top'], 0, 0, $width, $height);
-  imagealphablending($back_img, TRUE);
-  imagesavealpha($back_img, TRUE);
-
-  return $back_img;
-}
 
 /**
  * Stroke function adds a solid color stroke around an image with a transparent

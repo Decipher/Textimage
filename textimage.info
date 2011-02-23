@@ -2,11 +2,11 @@
 name = Textimage
 description = Provides text to image manipulations.
 core = 7.x
+
 files[] = textimage.install
 files[] = textimage.module
-
-files[] = textimage.admin.inc
 files[] = textimage.utils.inc
+files[] = textimage.admin.inc
 
 ; Information added by drupal.org packaging script on 2010-07-11
 version = "7.x-2.x-dev"

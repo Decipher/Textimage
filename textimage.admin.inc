@@ -1,5 +1,7 @@
 <?php
-// $Id: textimage_admin.inc,v 1.16 2009/05/14 12:32:20 deciphered Exp $
+// $Id: textimage.admin.inc,v 1.16 2009/05/14 12:32:20 deciphered Exp $
+
+include("textimage.utils.inc");
 
 /**
  * @file
@@ -45,17 +47,30 @@ function textimage_settings_form() {
   return system_settings_form($form);
 }
 
-function textimage_settings_form_validate($form, &$form_state) {
-  // Check for valid fonts path.
-  if ($form_state['values']['textimage_fonts_path'] != "" && !is_dir(rtrim($form_state['values']['textimage_fonts_path'], '\\/'))) {
-    form_set_error('textimage_fonts_path', t('The fonts path "%path" is invalid.', array('%path' => $form_state['values']['textimage_fonts_path'])));
-  }
 
-  // Check for valid backgorund images path.
-  if ($form_state['values']['textimage_images_path'] != "" && !is_dir(rtrim($form_state['values']['textimage_images_path'], '\\/'))) {
-    form_set_error('textimage_images_path', t('The background images path "%path" is invalid.', array('%path' => $form_state['values']['textimage_fonts_path'])));
-  }
+
+
+
+function textimage_settings_form_validate($form, &$form_state) {
+	// Check for valid fonts path.
+	if ($form_state['values']['textimage_fonts_path'] != "" && !is_dir(rtrim($form_state['values']['textimage_fonts_path'], '\\/'))) {
+		form_set_error('textimage_fonts_path', t('The fonts path "%path" is invalid.', array('%path' => $form_state['values']['textimage_fonts_path'])));
+	}
+
+	// Check for valid backgorund images path.
+	if ($form_state['values']['textimage_images_path'] != "" && !is_dir(rtrim($form_state['values']['textimage_images_path'], '\\/'))) {
+		form_set_error('textimage_images_path', t('The background images path "%path" is invalid.', array('%path' => $form_state['values']['textimage_fonts_path'])));
+	}
 }
+
+
+
+
+
+
+
+
+
 
 function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
   $preset = array();
