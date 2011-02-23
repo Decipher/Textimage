@@ -71,17 +71,17 @@ function textimage_help($path, $arg){
       		';
 
 			$output = t($output, array(
-				'!config' => url('admin/build/textimage/settings'),
-				'!presets' => url('admin/build/textimage/presets'),
-				'!example1' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example1.png',
-				'!example2' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example2.png',
-				'!example3' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example3.png',
+				'!config' => url('admin/config/textimage/settings'),
+		        '!presets' => url('admin/config/textimage/presets'),
+		        '!example1' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example1.png',
+		        '!example2' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example2.png',
+		        '!example3' => base_path() . drupal_get_path('module', 'textimage') .'/misc/example3.png',
 			));
 		break;
 
-		case 'admin/build/modules#description':
-		case 'admin/build/modules/textimage':
-		case 'admin/build/textimage':
+		case 'admin/config/modules#description':
+		case 'admin/config/modules/textimage':
+		case 'admin/config/textimage':
 			$output = t('Provides text to image manipulations.');
 		break;
   }
@@ -323,7 +323,7 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
 		$directory = 'public://textimage/' . $preset['pid'];
 		// Save the result so we don't have to recreate
 		$filePath=$directory. '/' . $filename;
-		$filePath=textimage_save_image($img,$filePath);
+		$filePath = textimage_save_image($img, $filePath);
 		if(!$fileMissing){
 			if ($preset['pid'] !== 0) {
 				db_insert('textimage_image')
@@ -346,13 +346,22 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
 
 
 
+function textimage_build_preview($variables){
+	$image = textimage_image_from_preset($variables['preset'],'Preview',array());
+	$filePath = 'public://textimage/preview.png';
+	return textimage_save_image($image, $filePath);
+}
+
+
+
+
 
 function textimage_save_image($image,$filePath){
-	$filePath=$filePath.'.png';
+	$filePath= $filePath . '.png';
 	textimage_directory_check($filePath);
-	$file = file_save_data('', $filePath,FILE_EXISTS_REPLACE);
+	$file = file_save_data('', $filePath, FILE_EXISTS_REPLACE);
 	$wrapper = file_stream_wrapper_get_instance_by_uri($file->uri);
-	imagepng($image,$wrapper->realpath());
+	imagepng($image, $wrapper->realpath());
 	imagedestroy($image);
 	clearstatcache();
 	$file->uid = 0;
@@ -361,6 +370,9 @@ function textimage_save_image($image,$filePath){
   
 	return $filePath;
 }
+
+
+
 
 
 
