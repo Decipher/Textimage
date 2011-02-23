@@ -246,8 +246,8 @@ function textimage_perm() {
  *
  */
 function textimage_image() {
-  $pattern = '/' . str_replace('/', '\/', base_path() . '(\?q=)?' . file_directory_path() . '/textimage/') . '/';
-  $args = explode('/', preg_replace($pattern, '', request_uri()));
+	$pattern = '/' . str_replace('/', '\/', base_path() . '(\?q=)?' . 'public://textimage/') . '/';
+  	$args = explode('/', preg_replace($pattern, '', request_uri()));
 
   $preset = array_shift($args);
   if (is_numeric($preset)) {
