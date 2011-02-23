@@ -518,7 +518,9 @@ function textimage_preset_edit_submit($form, &$form_state) {
   }
 }
 
-/*
+
+
+
 function textimage_preset_list() {
   $fonts_path = variable_get('textimage_fonts_path', drupal_get_path('module', 'textimage') . '/fonts');
   $presets = textimage_get_presets();
@@ -533,19 +535,24 @@ function textimage_preset_list() {
       $preset->name,
       $font['name'] . ' ' . $preset->settings['font']['size'] . t('px'),
       $preset->description,
-      l(t('edit'), 'admin/build/textimage/preset/' . $preset->pid . '/edit'),
-      l(t('delete'), 'admin/build/textimage/preset/' . $preset->pid . '/delete'),
-      l(t('flush cache'), 'admin/build/textimage/preset/' . $preset->pid . '/flush'),
+      l(t('edit'), 'admin/config/textimage/preset/' . $preset->pid . '/edit'),
+      l(t('delete'), 'admin/config/textimage/preset/' . $preset->pid . '/delete'),
+      l(t('flush cache'), 'admin/config/textimage/preset/' . $preset->pid . '/flush'),
+    );
+  }
+  if (empty($rows)) {
+    $rows[] = array(array('data' =>
+      t('No presets defined. <a href="!url">Create a new preset</a>.',array('!url' => url('admin/config/textimage/preset/new'))),
+      'colspan' => '6',
+      'class' => 'message')
     );
   }
 
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No presets defined. <a href="!url">Create a new preset</a>.', array('!url' => url('admin/build/textimage/preset/new'))), 'colspan' => '6', 'class' => 'message'));
-  }
-
-  return theme('table', $header, $rows);
+  return theme('table', array('header' => $header, 'rows' => $rows));
 }
-*/
+
+
+
 
 
 function textimage_preset_delete_confirm(&$form_state, $pid) {
@@ -588,22 +595,26 @@ function textimage_preset_flush_confirm_submit($form, &$form_state) {
   drupal_goto('admin/build/textimage/preset/list');
 }
 
-/*
-function textimage_get_presets() {
-  static $presets = array();
 
-  if (empty($presets)) {
-    $result = db_query("SELECT pid, name, description, settings FROM {textimage_preset} ORDER BY name");
-    $presets = array();
-    foreach ($result as $preset) {
-      $preset->settings = unserialize($preset->settings);
-      $presets[$preset->name] = $preset;
-    }
-  }
 
-  return $presets;
+
+
+function textimage_get_presets(){
+	static $presets = array();
+
+	if (empty($presets)) {
+		$result = db_query("SELECT pid, name, description, settings FROM {textimage_preset} ORDER BY name");
+		$presets = array();
+		foreach ($result as $preset) {
+			$preset->settings = unserialize($preset->settings);
+			$presets[$preset->name] = $preset;
+		}
+	}
+	return $presets;
 }
-*/
+
+
+
 
 /**
  * create a preset
