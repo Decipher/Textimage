@@ -420,7 +420,6 @@ function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
 
 function theme_textimage_preset_edit(&$form) {
   drupal_add_css(drupal_get_path('module', 'textimage') . '/misc/css/textimage_admin.css');
-
   drupal_render_children($form);
 }
 
