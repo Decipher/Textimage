@@ -57,8 +57,7 @@ function textimage_settings_form_validate($form, &$form_state) {
   }
 }
 
-/*
-function textimage_preset_edit(&$form_state, $op, $pid = NULL) {
+function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
   $preset = array();
   $image_presets = array();
 
@@ -111,7 +110,6 @@ function textimage_preset_edit(&$form_state, $op, $pid = NULL) {
       '#value' => $pid,
     );
   }
-
   $form['name'] = array(
     '#type' => 'textfield',
     '#title' => t('Preset Name'),
@@ -131,31 +129,23 @@ function textimage_preset_edit(&$form_state, $op, $pid = NULL) {
       : '',
     '#rows' => 1,
   );
-
   // Preview textimage.
   $preview = '';
+  
   if (count($preset) > 0) {
     $preview = $preset;
     $preview['pid'] = 0;
-    $preview_text = isset($preview['settings']['preview']['text']['default'])
-      ? $preview['settings']['preview']['text']['default']
-      : t('Preview');
-
-    $additional_text = array();
-    if (isset($preset['settings']['preview']['text']['additional'])) {
-      $additional_text = $preset['settings']['preview']['text']['additional'];
-      rsort($additional_text);
-    }
-
-    $preview = theme_textimage_image($preview, $preview_text, $additional_text, 'png', $preview_text, $preview_text);
+    $preview = textimage_build_preview(array('preset'=>$preview));
   }
+  
+  //drupal_add_http_header('Content-Type', 'image/png');
   $form['preview'] = array(
     '#markup' =>
       '<strong>' . t('Preview') . ":</strong>\n".
-      '<div id="textimage-preview">' . $preview . '</div>'
+      '<div id="textimage-preview"><img src="' . file_create_url($preview) . '"></div>'
     ,
   );
-
+  
   $form['settings'] = array(
     '#type' => 'vertical_tabs',
   );
@@ -174,7 +164,7 @@ function textimage_preset_edit(&$form_state, $op, $pid = NULL) {
     '#default_value' => isset($preset['settings']['font']['file'])
       ? $preset['settings']['font']['file']
       : '',
-    '#description' => t('Select the font to be used in this image. If no fonts are listed, check the <a href="!path">settings for Fonts Path</a>.', array('!path' => url('admin/build/textimage/settings'))),
+    '#description' => t('Select the font to be used in this image. If no fonts are listed, check the <a href="!path">settings for Fonts Path</a>.', array('!path' => url('admin/config/textimage/settings'))),
     '#required' => TRUE,
   );
   $form['settings']['font']['size'] = array(
@@ -418,59 +408,13 @@ function textimage_preset_edit(&$form_state, $op, $pid = NULL) {
     '#validate' => array('_textimage_number_validate' => array('yoffset')),
   );
 
-  // Preview Textimage
-  $form['settings']['preview'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Preview settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $form['settings']['preview']['text'] = array(
-    '#prefix' => '<div id="textimage-preview-text">',
-    '#suffix' => '</div>',
-  );
-  $form['settings']['preview']['text']['default'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Preview text'),
-    '#default_value' => isset($preset['settings']['preview']['text']['default'])
-      ? $preset['settings']['preview']['text']['default']
-      : t('Preview')
-    ,
-    '#rows' => 2,
-  );
-
-  // Add additional text fields.
-  if (isset($preset['settings']['preview']['text']['additional'])) {
-    foreach ($preset['settings']['preview']['text']['additional'] as $id => $value) {
-      $form['settings']['preview']['text']['additional'][$id] = array(
-        '#type' => 'textarea',
-        '#title' => t('Additional text'),
-        '#default_value' => isset($preset['settings']['preview']['text']['additional'][$id])
-          ? $preset['settings']['preview']['text']['additional'][$id]
-          : t('Preview')
-        ,
-        '#rows' => 2,
-      );
-    }
-  }
-
-  $form['settings']['preview']['button'] = array(
-    '#type' => 'button',
-    '#value' => t('Preview'),
-    '#ahah' => array(
-      'path' => 'js/textimage/preview',
-      'wrapper' => 'textimage-preview'
-    ),
-  );
-
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
   );
-
+  
   return $form;
 }
-*/
 
 
 
@@ -626,6 +570,7 @@ function _textimage_preset_create($name, $description, $settings) {
     ->fields(array('name' => $name, 'description' => $description, 'settings' => serialize($settings)))
     ->execute();
 }
+
 
 /**
  * update a preset

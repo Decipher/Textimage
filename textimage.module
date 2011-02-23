@@ -147,60 +147,63 @@ function textimage_menu() {
 		'type' => MENU_NORMAL_ITEM,
 		'file' => 'textimage_admin.inc'
 	);
-  
-	$items['admin/build/textimage/preset'] = array(
-		'title' => 'Presets',
-		'type' => MENU_DEFAULT_LOCAL_TASK
-	);
 	
-	$items['admin/build/textimage/preset/list'] = array(
-		'title' => 'List',
-		'type' => MENU_DEFAULT_LOCAL_TASK
-	);
+	$items['admin/config/textimage/preset'] = array(
+	    'title' => 'Presets',
+	    'type' => MENU_DEFAULT_LOCAL_TASK
+	  );
+	  $items['admin/config/textimage/preset/list'] = array(
+	    'title' => 'List',
+	    'type' => MENU_DEFAULT_LOCAL_TASK
+	  );
 
-  $items['admin/build/textimage/preset/new'] = array(
-    'title' => 'New',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('textimage_preset_edit', 'new'),
-    'access arguments' => array('administer site configuration'),
-    'weight' => 1,
-    'type' => MENU_LOCAL_TASK
-  );
+	  $items['admin/config/textimage/preset/new'] = array(
+	    'title' => 'New',
+	    'page callback' => 'drupal_get_form',
+	    'page arguments' => array('textimage_preset_edit', 'new'),
+	    'access arguments' => array('administer site configuration'),
+	    'weight' => 1,
+	    'type' => MENU_LOCAL_TASK,
+	    'file' => 'textimage_admin.inc'
+	  );
 
-  $items['admin/build/textimage/preset/%/edit'] = array(
-    'title' => 'Edit Preset',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('textimage_preset_edit', 'edit', 4),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_CALLBACK,
-  );
+	  $items['admin/config/textimage/preset/%/edit'] = array(
+	    'title' => 'Edit Preset',
+	    'page callback' => 'drupal_get_form',
+	    'page arguments' => array('textimage_preset_edit', 'edit', 4),
+	    'access arguments' => array('administer site configuration'),
+	    'type' => MENU_CALLBACK,
+	    'file' => 'textimage_admin.inc'
+	  );
 
-  $items['admin/build/textimage/preset/%/delete'] = array(
-    'title' => 'Edit Preset',
-    'load arguments' => array(4),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('textimage_preset_delete_confirm', 4),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_CALLBACK,
-  );
+	  $items['admin/config/textimage/preset/%/delete'] = array(
+	    'title' => 'Edit Preset',
+	    'load arguments' => array(4),
+	    'page callback' => 'drupal_get_form',
+	    'page arguments' => array('textimage_preset_delete_confirm', 4),
+	    'access arguments' => array('administer site configuration'),
+	    'type' => MENU_CALLBACK,
+	    'file' => 'textimage_admin.inc'
+	  );
 
-  $items['admin/build/textimage/preset/%/flush'] = array(
-    'title' => 'Flush Preset Cache',
-    'load arguments' => array(4),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('textimage_preset_flush_confirm', 4),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_CALLBACK,
-  );
+	  $items['admin/config/textimage/preset/%/flush'] = array(
+	    'title' => 'Flush Preset Cache',
+	    'load arguments' => array(4),
+	    'page callback' => 'drupal_get_form',
+	    'page arguments' => array('textimage_preset_flush_confirm', 4),
+	    'access arguments' => array('administer site configuration'),
+	    'type' => MENU_CALLBACK,
+	  );
 
-  $items['admin/build/textimage/settings'] = array(
-    'title' => 'Settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('textimage_settings_form'),
-    'access arguments' => array('administer site configuration'),
-    'weight' => 0,
-    'type' => MENU_LOCAL_TASK
-  );
+	  $items['admin/config/textimage/settings'] = array(
+	    'title' => 'Settings',
+	    'page callback' => 'drupal_get_form',
+	    'page arguments' => array('textimage_settings_form'),
+	    'access arguments' => array('administer site configuration'),
+	    'weight' => 0,
+	    'type' => MENU_LOCAL_TASK,
+	    'file' => 'textimage_admin.inc'
+	  );
 
   $items['js/textimage'] = array(
     'page callback' => 'textimage_js',
