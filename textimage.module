@@ -524,12 +524,12 @@ function textimage_image_add_stroke($img, $thickness, $color, $text_opacity) {
  *   String containing the path of the directory to check.
  */
 function textimage_directory_check($directory_path) {
-  // create each directory necessary if it doesn't exist
-  $directory_path = drupal_dirname($directory_path);
-  if (!file_prepare_directory($directory_path, FILE_CREATE_DIRECTORY)) {
-    return FALSE;
-  }
-  return TRUE;
+	// create each directory necessary if it doesn't exist
+	$directory_path = drupal_dirname($directory_path);
+	if (!file_prepare_directory($directory_path, FILE_CREATE_DIRECTORY)) {
+		return FALSE;
+	}
+	return TRUE;
 }
 
 /**
