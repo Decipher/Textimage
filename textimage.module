@@ -245,34 +245,35 @@ function textimage_perm() {
  *   in JPG format.
  *
  */
-function textimage_image() {
+function textimage_image(){
+	
 	$pattern = '/' . str_replace('/', '\/', base_path() . '(\?q=)?' . 'public://textimage/') . '/';
   	$args = explode('/', preg_replace($pattern, '', request_uri()));
 
-  $preset = array_shift($args);
-  if (is_numeric($preset)) {
-    drupal_not_found();
-    exit;
-  }
+	$preset = array_shift($args);
+	if (is_numeric($preset)) {
+		drupal_not_found();
+		exit;
+	}
 
-  $filename = urldecode(array_pop($args));
-  $additional_text = $args;
+	$filename = urldecode(array_pop($args));
+	$additional_text = $args;
 
-  // Determine our output format
-  preg_match('/\.([a-z]+)$/i', $filename, $matches);
-  $format = $matches[1];
-  if ($format == 'jpg') {
-    $format = 'jpeg';
-  }
+	// Determine our output format
+	preg_match('/\.([a-z]+)$/i', $filename, $matches);
+	$format = $matches[1];
+	if ($format == 'jpg') {
+		$format = 'jpeg';
+	}
 
-  // Determine the text to display
-  $text = preg_replace('/\.([a-z]+)$/i', '', $filename);
+	// Determine the text to display
+	$text = preg_replace('/\.([a-z]+)$/i', '', $filename);
 
-  if (!$img = textimage_build_image('url', $preset, $text, $additional_text, $format)) {
-    return FALSE;
-  }
+	if(!$img = textimage_build_image('url', $preset, $text, $additional_text, $format)) {
+		return FALSE;
+	}
 
-  drupal_goto($img);
+	drupal_goto($img);
 }
 
 function textimage_build_image($method, $preset, $text, $additional_text = array(), $format = 'png') {
@@ -932,12 +933,12 @@ function theme_textimage_formatter($element) {
 /**
  * Theme function for displaying textimages
  */
-function theme_textimage_image($preset, $text, $additional_text = array(), $format = 'png', $alt = '', $title = '', $attributes = array(), $getsize = TRUE, $image = TRUE) {
-  if (!$path = textimage_build_image('theme', $preset, $text, $additional_text, $format)) {
+function theme_textimage_image($variables){
+  if (!$path = textimage_build_image('theme', $variables['preset'], $variables['text'], $variables['additional_text'], $variables['format'])) {
     return FALSE;
   }
-  if ($image) {
-    return theme('image', $path, $alt, $title, $attributes, $getsize);
+  if (isset($variables['image'])) {
+    return theme('image', array('path'=>$path, 'alt'=>$variables['alt'], 'title'=>$variables['title'], 'attributes'=>$variables['attributes']));
   }
   return $path;
 }
