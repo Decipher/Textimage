@@ -423,6 +423,9 @@ function theme_textimage_preset_edit(&$form) {
   drupal_render_children($form);
 }
 
+
+
+
 function textimage_preset_edit_validate($form, &$form_state) {
   // Check for illegal characters in preset names
   if (preg_match('/[^0-9a-zA-Z_\-]/', $form_state['values']['name'])) {
@@ -744,22 +747,7 @@ function _textimage_font_name($filename) {
   return $font;
 }
 
-function _textimage_dec2hex($dec) {
-  $hex = dechex($dec);
-  return str_repeat("0", 2 - drupal_strlen($hex)) . drupal_strtoupper($hex);
-}
 
-function _textimage_number_validate($field, $field_name) {
-  if (!empty($field['#value']) && !is_numeric($field['#value'])) {
-    form_set_error($field_name, t('The value for %field must be a number.', array('%field' => $field['#title'])));
-  }
-}
-
-function _textimage_hex_validate($field, $field_name) {
-  if (!empty($field['#value']) && !preg_match('/^#[0123456789ABCDEF]{1,6}$/i', $field['#value'])) {
-    form_set_error($field_name, t('The value for %field must be in a hexidecimal format (i.e. #FFFFFF is white).', array('%field' => $field['#title'])));
-  }
-}
 
 /**
  * Returns an array of files with jpg, png, and gif extensions in the specified directory.

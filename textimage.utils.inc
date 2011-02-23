@@ -217,6 +217,27 @@ function _textimage_hex2rgb($hex) {
 
 
 
+function _textimage_dec2hex($dec){
+	$hex = dechex($dec);
+	return str_repeat("0", 2 - drupal_strlen($hex)) . drupal_strtoupper($hex);
+}
+
+function _textimage_number_validate($field, $field_name){
+	if (!empty($field['#value']) && !is_numeric($field['#value'])){
+		form_set_error($field_name, t('The value for %field must be a number.', array('%field' => $field['#title'])));
+	}
+}
+
+function _textimage_hex_validate($field, $field_name){
+	if (!empty($field['#value']) && !preg_match('/^#[0123456789ABCDEF]{1,6}$/i', $field['#value'])) {
+		form_set_error($field_name, t('The value for %field must be in a hexidecimal format (i.e. #FFFFFF is white).', array('%field' => $field['#title'])));
+	}
+}
+
+
+
+
+
 
 /**
  * Utility function for image_stroke. Analyzes surrounding pixels and determines
