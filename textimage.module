@@ -114,7 +114,7 @@ function textimage_theme(){
     	)
 	);
 
-	module_load_include('inc', 'textimage', 'textimage_admin');
+	module_load_include('inc', 'textimage', 'textimage.admin');
 
 	/*
 	foreach (textimage_get_presets() as $preset) {
@@ -145,7 +145,7 @@ function textimage_menu() {
 		'page callback' => 'textimage_preset_list',
 		'access arguments' => array('administer site configuration'),
 		'type' => MENU_NORMAL_ITEM,
-		'file' => 'textimage_admin.inc'
+		'file' => 'textimage.admin.inc'
 	);
 	
 	$items['admin/config/textimage/preset'] = array(
@@ -164,7 +164,7 @@ function textimage_menu() {
 	    'access arguments' => array('administer site configuration'),
 	    'weight' => 1,
 	    'type' => MENU_LOCAL_TASK,
-	    'file' => 'textimage_admin.inc'
+	    'file' => 'textimage.admin.inc'
 	  );
 
 	  $items['admin/config/textimage/preset/%/edit'] = array(
@@ -173,7 +173,7 @@ function textimage_menu() {
 	    'page arguments' => array('textimage_preset_edit', 'edit', 4),
 	    'access arguments' => array('administer site configuration'),
 	    'type' => MENU_CALLBACK,
-	    'file' => 'textimage_admin.inc'
+	    'file' => 'textimage.admin.inc'
 	  );
 
 	  $items['admin/config/textimage/preset/%/delete'] = array(
@@ -183,7 +183,7 @@ function textimage_menu() {
 	    'page arguments' => array('textimage_preset_delete_confirm', 4),
 	    'access arguments' => array('administer site configuration'),
 	    'type' => MENU_CALLBACK,
-	    'file' => 'textimage_admin.inc'
+	    'file' => 'textimage.admin.inc'
 	  );
 
 	  $items['admin/config/textimage/preset/%/flush'] = array(
@@ -202,7 +202,7 @@ function textimage_menu() {
 	    'access arguments' => array('administer site configuration'),
 	    'weight' => 0,
 	    'type' => MENU_LOCAL_TASK,
-	    'file' => 'textimage_admin.inc'
+	    'file' => 'textimage.admin.inc'
 	  );
 
   $items['js/textimage'] = array(
@@ -656,7 +656,7 @@ function _textimage_preset_load($preset){
 function textimage_field_formatter_info(){
 	$formatters = array();
 
-	module_load_include('inc', 'textimage', 'textimage_admin');
+	module_load_include('inc', 'textimage', 'textimage.admin');
 	foreach (textimage_get_presets() as $preset) {
 		$formatters['textimage_' . $preset->name] = array(
 			'label' => t('Textimage:') . ' ' . $preset->name,
