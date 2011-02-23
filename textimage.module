@@ -905,19 +905,20 @@ function _textimage_hex2rgb($hex) {
 /**
  * Implementation of hook_field_formatter_info().
  */
-function textimage_field_formatter_info() {
-  $formatters = array();
+/*
+function textimage_field_formatter_info(){
+	$formatters = array();
 
-  module_load_include('inc', 'textimage', 'textimage_admin');
-  foreach (textimage_get_presets() as $preset) {
-    $formatters['textimage_' . $preset->name] = array(
-      'label' => t('Textimage:') . ' ' . $preset->name,
-      'field types' => array('text', 'email'),
-    );
-  }
-
-  return $formatters;
+	module_load_include('inc', 'textimage', 'textimage_admin');
+	foreach (textimage_get_presets() as $preset) {
+		$formatters['textimage_' . $preset->name] = array(
+			'label' => t('Textimage:') . ' ' . $preset->name,
+			'field types' => array('text', 'email'),
+		);
+	}
+	return $formatters;
 }
+*/
 
 function theme_textimage_formatter($element) {
   $alt = $title = $element['#item']['safe'];
