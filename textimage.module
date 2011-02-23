@@ -255,7 +255,7 @@ function textimage_image(){
 		drupal_not_found();
 		exit;
 	}
-
+	
 	$filename = urldecode(array_pop($args));
 	$additional_text = $args;
 
@@ -269,7 +269,7 @@ function textimage_image(){
 	// Determine the text to display
 	$text = preg_replace('/\.([a-z]+)$/i', '', $filename);
 
-	if(!$img = textimage_build_image('url', $preset, $text, $additional_text, $format)) {
+	if (!$img = textimage_build_image('url', $preset, $text, $additional_text, $format)) {
 		return FALSE;
 	}
 
@@ -277,64 +277,66 @@ function textimage_image(){
 }
 
 function textimage_build_image($method, $preset, $text, $additional_text = array(), $format = 'png') {
-  // Integrety check
-  $output_function = 'image' . $format;
-  if (!drupal_function_exists($output_function)) {
-    $message = t('Unable to generate Textimage as the file extension is unsupported on this system. Files must have a .png, .jpg, or .gif extension.');
-    watchdog('textimage', $message, WATCHDOG_ERROR);
-    drupal_set_message($message, 'error');
-    return FALSE;
-  }
+	// Integrety check
+	$output_function = 'image' . $format;
+	if (!function_exists($output_function)) {
+		$message = t('Unable to generate Textimage as the file extension is unsupported on this system. Files must have a .png, .jpg, or .gif extension.');
+		watchdog('textimage', $message,array(), WATCHDOG_ERROR);
+		drupal_set_message($message, 'error');
+		return FALSE;
+	}
+  
+	// Load preset
+	if (!is_array($preset) && !$preset = _textimage_preset_load($preset)) {
+		$message = t('Unable to generate Textimage as the preset %preset is not defined.', array('%preset' => $preset));
+		watchdog('textimage', $message,array(), WATCHDOG_ERROR);
+		drupal_set_message($message, 'error');
+		return FALSE;
+	}
+	
+	$result = db_query("SELECT file FROM {textimage_image} WHERE pid = :pid AND data = :data", 
+		array(
+			':pid' => $preset['pid'],
+			':data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
+		)
+	)->fetchObject();
 
-  // Load preset
-  if (!is_array($preset) && !$preset = _textimage_preset_load($preset)) {
-    $message = t('Unable to generate Textimage as the preset %preset is not defined.', array('%preset' => $preset));
-    watchdog('textimage', $message, WATCHDOG_ERROR);
-    drupal_set_message($message, 'error');
-    return FALSE;
-  }
-
-  $result = db_query(
-    "SELECT file FROM {textimage_image} WHERE pid = :pid AND data = :data",
-    array(
-      ':pid' => $preset['pid'],
-      ':data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
-    )
-  );
-
-  $result = db_fetch_object($result);
-  if ((!$result && (user_access('create textimages') || $method == 'theme')) || $preset['pid'] == 0) {
-    // Generate the image resource
-    $img = textimage_image_from_preset($preset, $text, $additional_text);
-
-    $filename = REQUEST_TIME . rand(1000, 9999) . '.' . $format;
-    $directory = file_directory_path() . '/textimage/' . $preset['pid'];
-
-    // Save the result so we don't have to recreate
-    textimage_directory_check($directory);
-    $output_function($img, $directory . '/' . $filename);
-    imagedestroy($img);
-
-    if ($preset['pid'] !== 0) {
-      db_query(
-        "INSERT INTO {textimage_image} (pid, file, data) VALUES ('%s', '%s', '%s')",
-        $preset['pid'], $directory . '/' . $filename,
-        serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
-      );
-    }
-
-    return $directory . '/' . $filename;
-  }
-
-  elseif (!$result) {
-    drupal_access_denied();
-    return FALSE;
-  }
-
-  else {
-    return $result->file;
-  }
+	//CHECK IF FILE EXIST
+	$fileMissing=false;
+	if($result && !is_file($result->file)){
+		$fileMissing=true;
+	}
+	
+	if ((!$result && (user_access('create textimages') || $method == 'theme')) || $preset['pid'] == 0 || $fileMissing) {
+		// Generate the image resource
+		$img = textimage_image_from_preset($preset, $text, $additional_text);
+		$filename=check_plain($text);
+		if(empty($filename)) $filename = REQUEST_TIME . rand(1000, 9999) . '.' . $format;
+		$directory = 'public://textimage/' . $preset['pid'];
+		// Save the result so we don't have to recreate
+		$filePath=$directory. '/' . $filename;
+		$filePath=textimage_save_image($img,$filePath);
+		if(!$fileMissing){
+			if ($preset['pid'] !== 0) {
+				db_insert('textimage_image')
+				->fields(array(
+					'pid' => $preset['pid'],
+					'file' =>  $filePath,
+					'data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
+				))->execute();
+			}
+		}
+		return $filePath;
+		
+	}elseif(!$result){
+		drupal_access_denied();
+		return FALSE;
+	}else{
+		return $result->file;
+	}
 }
+
+
 
 /**
  * Loads the Textimage preset and generates the GD image resource.
