@@ -623,8 +623,7 @@ function _textimage_preset_flush($pid) {
   }
 
   $preset = _textimage_preset_load($pid);
-  $presetdir = realpath(file_directory_path() . '/textimage/' . $pid);
-
+  $presetdir = drupal_realpath('public://textimage/'.$pid);
   if (is_dir($presetdir)) {
     _textimage_recursive_delete($presetdir);
     @unlink($presetdir);
@@ -635,11 +634,14 @@ function _textimage_preset_flush($pid) {
     ->execute();
 }
 
+
+
 function _textimage_flush_cache() {
   if (module_exists('content')) {
     cache_clear_all('*', 'cache_content', TRUE);
   }
 }
+
 
 /**
  * Recursively delete all files and folders in the specified filepath, then
