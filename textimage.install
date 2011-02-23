@@ -39,7 +39,7 @@ function textimage_requirements($phase){
 /**
  * Implementation of hook_schema().
  */
-/*
+
 function textimage_schema() {
   $schema['textimage_preset'] = array(
     'fields' => array(
@@ -62,31 +62,23 @@ function textimage_schema() {
 
   return $schema;
 }
-*/
-/**
- * Implementation of hook_install().
- */
-function textimage_install(){
-	//drupal_install_schema('textimage');
-}
 
 /**
  * Implementation of hook_uninstall().
  */
-/*
 function textimage_uninstall() {
-	include_once(drupal_get_path('module', 'textimage') . '/textimage_admin.inc');
-
-	drupal_uninstall_schema('textimage');
-
-	$path = realpath(file_directory_path() . '/textimage');
-	if ($path != FALSE) {
-		_textimage_recursive_delete($path);
-	}
-
-	db_query("DELETE from {variable} WHERE name LIKE '%%textimage_%%'");
+  include_once(drupal_get_path('module', 'textimage') . '/textimage_admin.inc');
+  
+  $path=drupal_realpath('public://textimage');
+  if ($path != FALSE) {
+    _textimage_recursive_delete($path);
+  }
+  db_delete('variable')
+    ->condition('name', '%'.db_like('textimage_') . '%', 'LIKE')
+    ->execute();
+  cache_clear_all('variables', 'cache');
 }
-*/
+
 /**
  * Implementation of hook_update_N().
  *
