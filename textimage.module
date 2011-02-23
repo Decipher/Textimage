@@ -848,29 +848,23 @@ if (!function_exists('imagerotate')) {
  * @param preset
  *    preset id or name.
  */
-function _textimage_preset_load($preset) {
-  // Load preset by id
-  if (is_numeric($preset)) {
-    $preset = db_fetch_array(
-      db_query('SELECT * FROM {textimage_preset} WHERE pid = %d', $preset)
-    );
-  }
+function _textimage_preset_load($preset){
+	// Load preset by id
+	if (is_numeric($preset)) {
+		$preset=db_query('SELECT * FROM {textimage_preset} WHERE pid = :pid', array(':pid' => $preset))->fetchAssoc();
+	}
 
-  // Load preset by name
-  else {
-    $preset = db_fetch_array(
-      db_query("SELECT * FROM {textimage_preset} WHERE name = '%s'", $preset)
-    );
-  }
+	// Load preset by name
+	else{
+		$preset=db_query("SELECT * FROM {textimage_preset} WHERE name = :name", array(':name' => $preset))->fetchAssoc();
+	}
 
-  if (empty($preset)) {
-    return FALSE;
-  }
-
-  else {
-    $preset['settings'] = unserialize($preset['settings']);
-    return $preset;
-  }
+	if (empty($preset)){
+		return FALSE;
+	}else{
+		$preset['settings'] = unserialize($preset['settings']);
+		return $preset;
+	}
 }
 
 /**
