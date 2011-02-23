@@ -1,8 +1,6 @@
 <?php
 // $Id: textimage.admin.inc,v 1.16 2009/05/14 12:32:20 deciphered Exp $
 
-include("textimage.utils.inc");
-
 /**
  * @file
  */

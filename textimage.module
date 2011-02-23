@@ -1,6 +1,8 @@
 <?php
 // $Id: textimage.module,v 1.40 2009/06/02 22:26:40 deciphered Exp $
 
+include_once("textimage.utils.inc");
+
 /**
  * @file
  */
@@ -344,6 +346,24 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
 
 
 
+
+function textimage_save_image($image,$filePath){
+	$filePath=$filePath.'.png';
+	textimage_directory_check($filePath);
+	$file = file_save_data('', $filePath,FILE_EXISTS_REPLACE);
+	$wrapper = file_stream_wrapper_get_instance_by_uri($file->uri);
+	imagepng($image,$wrapper->realpath());
+	imagedestroy($image);
+	clearstatcache();
+	$file->uid = 0;
+	$file->filemime = 'image/png';
+	$file = file_save($file);
+  
+	return $filePath;
+}
+
+
+
 /**
  * Loads the Textimage preset and generates the GD image resource.
  *
@@ -505,13 +525,9 @@ function textimage_image_add_stroke($img, $thickness, $color, $text_opacity) {
  */
 function textimage_directory_check($directory_path) {
   // create each directory necessary if it doesn't exist
-  $directory_path = drupal_substr($directory_path, drupal_strlen(file_directory_path()) + 1);
-  foreach (explode('/', $directory_path) as $dir) {
-    $dirs[] = $dir;
-    $dir = file_directory_path() . '/' . implode($dirs, '/');
-    if (!file_check_directory($dir, FILE_CREATE_DIRECTORY)) {
-      return FALSE;
-    }
+  $directory_path = drupal_dirname($directory_path);
+  if (!file_prepare_directory($directory_path, FILE_CREATE_DIRECTORY)) {
+    return FALSE;
   }
   return TRUE;
 }
