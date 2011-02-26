@@ -596,7 +596,7 @@ function textimage_wrap_text($text, $fontsize, $font, $maximum_width, $align) {
         $last_line  = $first_part_array[$last_index];
         $last_line_width = textimage_measure_text_width($last_line, $fontsize, $font);
         // Get needed space for padding
-        $num_space = floor(($maximum_width - $last_line_width) / $space_width);
+        $num_space = floor(($maximum_width - $last_line_width) / $space_width) - 1;
         // Add space padding (to center the last line of the text's first part)
         for ($i = 0; $i < $num_space; ++$i) {
           $last_line = ' ' . $last_line;
