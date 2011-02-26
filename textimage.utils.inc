@@ -79,7 +79,7 @@ function textimage_text_to_image($text, $fontsize, $font, $color = array('hex' =
 	$x = -$bbox[0];
 	$y = $box_height - $bbox[3];
 
-	if(($fixed_width && $maximum_width > 0) && $align !== ALIGN_LEFT){
+	if (($fixed_width && $maximum_width > 0) && $align !== ALIGN_LEFT) {
 		switch($align){
 
 			// Set text alignment center
@@ -102,7 +102,7 @@ function textimage_text_to_image($text, $fontsize, $font, $color = array('hex' =
 	$fore = imagecolorallocatealpha($image, $r, $g, $b, $alpha);
 
 	imagettftext($image, $fontsize, $q_angle, $x, $y, $fore, $font, $text);
-	if($rotation != 0){
+	if ($rotation != 0) {
 		$image = imagerotate($image, $rotation, 0);
 	}
 
@@ -202,8 +202,6 @@ function textimage_image_add_margin($img, $margin) {
 }
 
 
-
-
 /**
  *  Convert a hex color representation to it's rgb integer components.
  *
@@ -236,31 +234,24 @@ function _textimage_hex2rgb($hex) {
   return array($r, $g, $b);
 }
 
-
-
-
-
-function _textimage_dec2hex($dec){
+function _textimage_dec2hex($dec) {
 	$hex = dechex($dec);
 	return str_repeat("0", 2 - drupal_strlen($hex)) . drupal_strtoupper($hex);
 }
 
-function _textimage_number_validate($field, $field_name){
-	if (!empty($field['#value']) && !is_numeric($field['#value'])){
-		form_set_error($field_name, t('The value for %field must be a number.', array('%field' => $field['#title'])));
+function _textimage_number_validate($element, &$form_state) {
+	if (!empty($element['#value']) && !is_numeric($element['#value'])){
+    $field_name = implode('][', $element['#parents']);
+		form_set_error($field_name, t('The value for %field must be a number.', array('%field' => $element['#title'])));
 	}
 }
 
-function _textimage_hex_validate($field, $field_name){
-	if (!empty($field['#value']) && !preg_match('/^#[0123456789ABCDEF]{1,6}$/i', $field['#value'])) {
-		form_set_error($field_name, t('The value for %field must be in a hexidecimal format (i.e. #FFFFFF is white).', array('%field' => $field['#title'])));
+function _textimage_hex_validate($element, &$form_state) {
+	if (!empty($element['#value']) && !preg_match('/^#[0123456789ABCDEF]{1,6}$/i', $element['#value'])) {
+		$field_name = implode('][', $element['#parents']);
+		form_set_error($field_name, t('The value for %field must be in a hexidecimal format (i.e. #FFFFFF is white).', array('%field' => $element['#title'])));
 	}
 }
-
-
-
-
-
 
 /**
  * Utility function for image_stroke. Analyzes surrounding pixels and determines
