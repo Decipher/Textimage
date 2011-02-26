@@ -7,10 +7,10 @@ files[] = textimage.install
 files[] = textimage.module
 files[] = textimage.utils.inc
 files[] = textimage.admin.inc
+configure = admin/config/media/textimage
 
 ; Information added by drupal.org packaging script on 2010-07-11
 version = "7.x-2.x-dev"
 core = "7.x"
 project = "textimage"
 datestamp = "1278835942"
-
