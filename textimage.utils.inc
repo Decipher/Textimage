@@ -26,8 +26,9 @@ function textimage_text_to_image($text, $fontsize, $font, $color = array('hex' =
 	$cos = cos($rad);
 
 	// Perform text wrapping, if necessary.
-	if ($maximum_width - 1 > 0) {
-		$text = textimage_wrap_text($text, $fontsize, $font, $maximum_width - 1);
+  $max_width = $maximum_width - 1;
+	if ($max_width > 0) {
+		$text = textimage_wrap_text($text, $fontsize, $font, $max_width, $align);
 	}
 
 	// Get co-ordinates of text string and boundry box.
@@ -80,7 +81,7 @@ function textimage_text_to_image($text, $fontsize, $font, $color = array('hex' =
 	$y = $box_height - $bbox[3];
 
 	if (($fixed_width && $maximum_width > 0) && $align !== ALIGN_LEFT) {
-		switch($align){
+		switch ($align) {
 
 			// Set text alignment center
 			case ALIGN_CENTER:
