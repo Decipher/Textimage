@@ -282,7 +282,7 @@ function textimage_image(){
 	drupal_goto($img);
 }
 
-function textimage_build_image($method, $preset, $text, $additional_text = array(), $format = 'png', $file_path = NULL) {
+function textimage_build_image($method, $preset, $text, $additional_text = array(), $format = 'png', $file_uri = NULL) {
 	// Integrety check
 	$output_function = 'image' . $format;
 	if (!function_exists($output_function)) {
@@ -308,15 +308,15 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
 	)->fetchObject();
 
 	//CHECK IF FILE EXIST
-	$fileMissing=false;
+	$file_missing = false;
 	if($result && !is_file($result->file)){
-		$fileMissing=true;
+		$file_missing = true;
 	}
 	
-	if ((!$result && (user_access('create textimages') || $method == 'theme')) || $preset['pid'] == 0 || $fileMissing) {
+	if ((!$result && (user_access('create textimages') || $method == 'theme')) || $preset['pid'] == 0 || $file_missing) {
 		// Generate the image resource
 		$img = textimage_image_from_preset($preset, $text, $additional_text);
-    if (empty($file_path)) {
+    if (empty($file_uri)) {
       $filename = check_plain($text);
       if (empty($filename)) {
         $filename = REQUEST_TIME . rand(1000, 9999) . '.' . $format;
@@ -325,8 +325,11 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
       // Save the result so we don't have to recreate
       $file_path = $directory. '/' . $filename;
     }
+    else {
+      $file_path = $file_uri;
+    }
 		$file_path = textimage_save_image($img, $file_path);
-		if(!$fileMissing){
+		if(!$file_missing && empty($file_uri)){
 			if ($preset['pid'] !== 0) {
 				db_insert('textimage_image')
 				->fields(array(
@@ -546,12 +549,15 @@ function textimage_measure_text_width($text, $fontsize, $font) {
 /**
  * Wrap text for rendering at a given width.
  */
-function textimage_wrap_text($text, $fontsize, $font, $maximum_width) {
+function textimage_wrap_text($text, $fontsize, $font, $maximum_width, $align) {
   // State variables for the search interval
   $end = 0;
   $begin = 0;
   $fit = $begin;
-
+  if ($align == ALIGN_CENTER) {
+    // Get width of the space character
+    $space_width = textimage_measure_text_width(' ', $fontsize, $font);
+  }
   // Note: we count in bytes for speed reasons, but maintain character boundaries.
   while (true) {
     // Find the next wrap point (always after trailing whitespace).
@@ -563,7 +569,7 @@ function textimage_wrap_text($text, $fontsize, $font, $maximum_width) {
     }
 
     // Fetch text, removing trailing white-space and measure it.
-    $line = preg_replace('/[' . PREG_CLASS_SEPARATOR . ']+$/u', '', drupal_substr($text, $begin, $end - $begin));
+    $line  = preg_replace('/[' . PREG_CLASS_SEPARATOR . ']+$/u', '', drupal_substr($text, $begin, $end - $begin));
     $width = textimage_measure_text_width($line, $fontsize, $font);
 
     // See if $line extends past the available space.
@@ -572,17 +578,44 @@ function textimage_wrap_text($text, $fontsize, $font, $maximum_width) {
       if ($fit == $begin) {
         // Cut off letters until it fits.
         while (drupal_strlen($line) > 0 && $width > $maximum_width) {
-          $line = drupal_substr($line, 0, -1);
+          $line  = drupal_substr($line, 0, -1);
           $width = textimage_measure_text_width($line, $fontsize, $font);
         }
         // If no fit was found, the image is too narrow..
         $fit = drupal_strlen($line) ? $begin + drupal_strlen($line) : $end;
       }
-
       // We have a valid fit for the next line. Insert a line-break and reset
       // the search interval.
-      $text = drupal_substr($text, 0, $fit) . "\n" . drupal_substr($text, $fit);
-      $end = $begin = ++$fit;
+      $first_part = drupal_substr($text, 0, $fit);
+      $last_part  = drupal_substr($text, $fit);
+      if ($align == ALIGN_CENTER) {        
+        $text  = $first_part . "\n" . $last_part;
+        // Get last line of the text's first part
+        $first_part_array = explode("\n", $first_part);
+        $last_index = count($first_part_array) - 1;
+        $last_line  = $first_part_array[$last_index];
+        $last_line_width = textimage_measure_text_width($last_line, $fontsize, $font);
+        // Get needed space for padding
+        $num_space = floor(($maximum_width - $last_line_width) / $space_width);
+        // Add space padding (to center the last line of the text's first part)
+        for ($i = 0; $i < $num_space; ++$i) {
+          $last_line = ' ' . $last_line;
+        }
+        $first_part_array[$last_index] = $last_line;
+        $first_part = implode("\n", $first_part_array);
+        $last_part_width = textimage_measure_text_width($last_part, $fontsize, $font);
+        if ($last_part_width < $maximum_width) {
+          // Get needed space for last part's padding
+          $num_space = floor(($maximum_width - $last_part_width) / $space_width) - 1;
+          // Add space padding (to center the last line of the text's first part)
+          for ($i = 0; $i < $num_space; ++$i) {
+            $last_part = ' ' . $last_part;
+          }
+        }
+      }
+      $text  = $first_part . "\n" . $last_part;
+      $begin = ++$fit;
+      $end   = $begin;
     }
     else {
       // We can fit this text. Wait for now.
