@@ -1,6 +1,11 @@
 <?php
 /**
- * Implementation of hook_requirements().
+ * @file
+ * Installation callback for Textimage.
+ */
+
+/**
+ * Implements hook_requirements().
  */
 function textimage_requirements($phase){
 	// Ensure translations don't break at install time
@@ -16,17 +21,20 @@ function textimage_requirements($phase){
 		$requirements['textimage_gd']['value'] = $info['GD Version'];
 
 		// Check for FreeType support
-		if(function_exists('imagettftext') && $info["FreeType Support"]){
-			if(!module_exists('color') && !module_exists('imageapi_gd')) {
+		if (function_exists('imagettftext') && $info["FreeType Support"]){
+			if (!module_exists('color') && !module_exists('imageapi_gd')) {
 				$requirements['textimage_gd']['severity'] = REQUIREMENT_OK;
-			}else {
+			}
+      else {
 				$requirements = array();
 			}
-		}else{
+		}
+    else {
 			$requirements['textimage_gd']['severity'] = REQUIREMENT_ERROR;
 			$requirements['textimage_gd']['description'] = t('The GD library for PHP is enabled, but was compiled without FreeType support. Please check the <a href="@url">PHP image documentation</a> for information on how to correct this.', array('@url' => 'http://www.php.net/manual/en/ref.image.php'));
 		}
-	}else{
+	}
+  else {
 		$requirements['textimage_gd'] = array(
 			'value' => $t('Not installed'),
 			'severity' => REQUIREMENT_ERROR,
@@ -37,25 +45,50 @@ function textimage_requirements($phase){
 }
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
-
 function textimage_schema() {
   $schema['textimage_preset'] = array(
     'fields' => array(
-      'pid' => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
-      'name' => array('type' => 'varchar', 'length' => 255, 'not null' => TRUE),
-      'description' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE),
-      'settings' => array('type' => 'text', 'not null' => TRUE),
+      'pid'  => array(
+        'type' => 'serial', 
+        'unsigned' => TRUE, 
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'type' => 'varchar', 
+        'length'   => 255, 
+        'not null' => TRUE,
+      ),
+      'description' => array(
+        'type' => 'text', 
+        'size' => 'medium', 
+        'not null' => TRUE,
+      ),
+      'settings'    => array(
+        'type' => 'text', 
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array('pid'),
   );
 
   $schema['textimage_image'] = array(
     'fields' => array(
-      'pid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE),
-      'file' => array('type' => 'varchar', 'length' => 255, 'not null' => TRUE),
-      'data' => array('type' => 'text', 'not null' => TRUE),
+      'pid' => array(
+        'type' => 'int', 
+        'unsigned' => TRUE, 
+        'not null' => TRUE,
+      ),
+      'file' => array(
+        'type' => 'varchar', 
+        'length'   => 255, 
+        'not null' => TRUE,
+      ),
+      'data' => array(
+        'type' => 'text', 
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array('file'),
   );
@@ -64,15 +97,10 @@ function textimage_schema() {
 }
 
 /**
- * Implementation of hook_uninstall().
+ * Implements hook_uninstall().
  */
 function textimage_uninstall() {
-  include_once(drupal_get_path('module', 'textimage') . '/textimage_admin.inc');
-  
-  $path=drupal_realpath('public://textimage');
-  if ($path != FALSE) {
-    _textimage_recursive_delete($path);
-  }
+  file_unmanaged_delete_recursive('public://textimage');
   db_delete('variable')
     ->condition('name', '%'.db_like('textimage_') . '%', 'LIKE')
     ->execute();
@@ -80,7 +108,7 @@ function textimage_uninstall() {
 }
 
 /**
- * Implementation of hook_update_N().
+ * Implements hook_update_N().
  *
  * Install the textimage tables and seperate variable names for captcha specific variables
  */
