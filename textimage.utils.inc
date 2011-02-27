@@ -178,9 +178,6 @@ if (!function_exists('imagerotate')) {
 	}
 }
 
-
-
-
 /**
  * This function adds a margin (or border) around an existing image resource
  */
@@ -201,7 +198,6 @@ function textimage_image_add_margin($img, $margin) {
 
   return $back_img;
 }
-
 
 /**
  *  Convert a hex color representation to it's rgb integer components.
@@ -233,25 +229,6 @@ function _textimage_hex2rgb($hex) {
   $g = hexdec($g);
   $b = hexdec($b);
   return array($r, $g, $b);
-}
-
-function _textimage_dec2hex($dec) {
-	$hex = dechex($dec);
-	return str_repeat("0", 2 - drupal_strlen($hex)) . drupal_strtoupper($hex);
-}
-
-function _textimage_number_validate($element, &$form_state) {
-	if (!empty($element['#value']) && !is_numeric($element['#value'])){
-    $field_name = implode('][', $element['#parents']);
-		form_set_error($field_name, t('The value for %field must be a number.', array('%field' => $element['#title'])));
-	}
-}
-
-function _textimage_hex_validate($element, &$form_state) {
-	if (!empty($element['#value']) && !preg_match('/^#[0123456789ABCDEF]{1,6}$/i', $element['#value'])) {
-		$field_name = implode('][', $element['#parents']);
-		form_set_error($field_name, t('The value for %field must be in a hexidecimal format (i.e. #FFFFFF is white).', array('%field' => $element['#title'])));
-	}
 }
 
 /**

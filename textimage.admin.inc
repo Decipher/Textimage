@@ -59,7 +59,6 @@ function textimage_settings_form_validate($form, &$form_state) {
 }
 
 function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
-  module_load_include('inc', 'textimage', 'textimage.utils');
   $preset = array();
   $image_presets = array();
 
@@ -137,11 +136,26 @@ function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
   if (count($preset) > 0) {
     $preview = $preset;
     $preview['pid'] = 0;
-    $preview = textimage_build_preview(array('preset'=>$preview));
+    $preview_text = isset($preview['settings']['preview']['text']['default'])
+      ? $preview['settings']['preview']['text']['default']
+      : t('Preview');
+
+    $additional_text = array();
+    if (isset($preset['settings']['preview']['text']['additional'])) {
+      $additional_text = $preset['settings']['preview']['text']['additional'];
+      rsort($additional_text);
+    }
+
+    $preview = textimage_build_preview(array(
+      'preset' => $preview,
+      'text'   => $preview_text,
+      'additional_text' => $additional_text,
+    ));
   }
   
   //drupal_add_http_header('Content-Type', 'image/png');
   $form['preview'] = array(
+    '#type'   => 'item',
     '#markup' =>
       '<strong>' . t('Preview') . ":</strong>\n".
       '<div id="textimage-preview"><img src="' . file_create_url($preview) . '"></div>'
@@ -378,9 +392,8 @@ function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
       ? $preset['settings']['background']['image']
       : ''
     ,
-    '#ahah' => array(
-      'path'    => 'js/textimage/background',
-      'wrapper' => 'textimage-preview-text'
+    '#ajax' => array(
+      'callback' => 'textimage_js_preview',
     ),
     '#description' => t('Select the background type to be used in this image.'),
   );
@@ -406,6 +419,51 @@ function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
     '#maxlength' => 4,
     '#size' => 4,
     '#element_validate' => array('_textimage_number_validate'),
+  );
+
+  // Preview Textimage
+  $form['settings']['preview'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Preview settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['settings']['preview']['text'] = array(
+    '#type'   => 'item',
+    '#prefix' => '<div id="textimage-preview-text">',
+    '#suffix' => '</div>',
+  );
+  $form['settings']['preview']['text']['default'] = array(
+    '#type'  => 'textarea',
+    '#title' => t('Preview text'),
+    '#default_value' => isset($preset['settings']['preview']['text']['default'])
+      ? $preset['settings']['preview']['text']['default']
+      : t('Preview')
+    ,
+    '#rows' => 2,
+  );
+
+  // Add additional text fields.
+  if (isset($preset['settings']['preview']['text']['additional'])) {
+    foreach ($preset['settings']['preview']['text']['additional'] as $id => $value) {
+      $form['settings']['preview']['text']['additional'][$id] = array(
+        '#type'  => 'textarea',
+        '#title' => t('Additional text'),
+        '#default_value' => isset($preset['settings']['preview']['text']['additional'][$id])
+          ? $preset['settings']['preview']['text']['additional'][$id]
+          : t('Preview')
+        ,
+        '#rows' => 2,
+      );
+    }
+  }
+
+  $form['settings']['preview']['button'] = array(
+    '#type'  => 'button',
+    '#value' => t('Preview'),
+    '#ajax'  => array(
+      'callback' => 'textimage_js_preview',
+    ),
   );
 
   $form['submit'] = array(
@@ -595,7 +653,10 @@ function _textimage_preset_flush($pid) {
   }
 
   $preset = _textimage_preset_load($pid);
-  file_unmanaged_delete_recursive('public://textimage/' . $pid);
+  file_unmanaged_delete_recursive(variable_get('file_default_scheme', 'public') . '://textimage/' . $pid);
+
+
+
 
   db_delete('textimage_image')
     ->condition('pid', $pid)
@@ -633,7 +694,6 @@ function _textimage_font_list($fontdir) {
 }
 
 function _textimage_font_name($filename) {
-  module_load_include('inc', 'textimage', 'textimage.utils');
   $fd = fopen($filename, "r");
   $text = fread($fd, filesize($filename));
   fclose($fd);
@@ -706,6 +766,22 @@ function _textimage_font_name($filename) {
   return $font;
 }
 
+function _textimage_dec2hex($dec) {
+  $hex = dechex($dec);
+  return str_repeat("0", 2 - drupal_strlen($hex)) . drupal_strtoupper($hex);
+}
+
+function _textimage_number_validate($field, $field_name) {
+  if (!empty($field['#value']) && !is_numeric($field['#value'])) {
+    form_set_error($field_name, t('The value for %field must be a number.', array('%field' => $field['#title'])));
+  }
+}
+
+function _textimage_hex_validate($field, $field_name) {
+  if (!empty($field['#value']) && !preg_match('/^#[0123456789ABCDEF]{1,6}$/i', $field['#value'])) {
+    form_set_error($field_name, t('The value for %field must be in a hexidecimal format (i.e. #FFFFFF is white).', array('%field' => $field['#title'])));
+  }
+}
 /**
  * Returns an array of files with jpg, png, and gif extensions in the specified directory.
  *

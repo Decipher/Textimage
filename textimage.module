@@ -1,8 +1,6 @@
 <?php
 // $Id: textimage.module,v 1.40 2009/06/02 22:26:40 deciphered Exp $
 
-//module_load_include('inc', 'textimage', 'textimage.utils');
-
 /**
  * @file
  */
@@ -207,12 +205,6 @@ function textimage_menu() {
 		'file'   => 'textimage.admin.inc',
 	);
 
-	$items['js/textimage'] = array(
-		'page callback'    => 'textimage_js',
-		'access arguments' => array('access content'),
-		'type' => MENU_CALLBACK,
-	);
-
   return $items;
 }
 
@@ -253,7 +245,7 @@ function textimage_perm() {
  */
 function textimage_image(){
 	
-	$pattern = '/' . str_replace('/', '\/', base_path() . '(\?q=)?' . 'public://textimage/') . '/';
+	$pattern = '/' . str_replace('/', '\/', base_path() . '(\?q=)?' . variable_get('file_default_scheme', 'public') . '://textimage/') . '/';
   	$args = explode('/', preg_replace($pattern, '', request_uri()));
 
 	$preset = array_shift($args);
@@ -317,19 +309,20 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
 		// Generate the image resource
 		$img = textimage_image_from_preset($preset, $text, $additional_text);
     if (empty($file_uri)) {
-      $filename = check_plain($text);
+      $filename = check_plain(str_replace('/', '', $text));
       if (empty($filename)) {
         $filename = REQUEST_TIME . rand(1000, 9999) . '.' . $format;
       }
-      $directory = 'public://textimage/' . $preset['pid'];
+      $directory = variable_get('file_default_scheme', 'public') . '://textimage/' . $preset['pid'];
       // Save the result so we don't have to recreate
       $file_path = $directory. '/' . $filename;
     }
     else {
       $file_path = $file_uri;
     }
-		$file_path = textimage_save_image($img, $file_path);
-		if(!$file_missing && empty($file_uri)){
+		$file_path = textimage_save_image($img, $file_path, $format);
+    // Don't add the custom defined file path
+		if (!$file_missing && empty($file_uri)) { 
 			if ($preset['pid'] !== 0) {
 				db_insert('textimage_image')
 				->fields(array(
@@ -351,22 +344,26 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
 	}
 }
 
-function textimage_build_preview($variables){
-	$image = textimage_image_from_preset($variables['preset'],'Preview',array());
-	$file_path = 'public://textimage/preview.png';
-	return textimage_save_image($image, $file_path);
+function textimage_build_preview($variables) {
+	$image = textimage_image_from_preset($variables['preset'], $variables['text'], $variables['additional_text']);
+	$file_path = variable_get('file_default_scheme', 'public') . '://textimage/preview.png';
+	return textimage_save_image($image, $file_path, 'png');
 }
 
-function textimage_save_image($image, $file_path){
-	$file_path = $file_path . '.png';
+function textimage_save_image($image, $file_path, $format){
+  global $user;
+	$file_path = "$file_path.$format";
 	textimage_directory_check($file_path);
 	$file = file_save_data('', $file_path, FILE_EXISTS_REPLACE);
 	$wrapper = file_stream_wrapper_get_instance_by_uri($file->uri);
-	imagepng($image, $wrapper->realpath());
-	imagedestroy($image);
-	clearstatcache();
-	$file->uid = 0;
-	$file->filemime = 'image/png';
+  $image_function = "image$format";
+  if (function_exists($image_function)) {
+    $image_function($image, $wrapper->realpath());
+    imagedestroy($image);
+    clearstatcache();
+  }
+	$file->uid = $user->uid;
+	$file->filemime = "image/$format";
 	$file = file_save($file);
   
 	return $file_path;
@@ -607,6 +604,7 @@ function textimage_wrap_text($text, $fontsize, $font, $maximum_width, $align) {
         if ($last_part_width < $maximum_width) {
           // Get needed space for last part's padding
           $num_space = floor(($maximum_width - $last_part_width) / $space_width) - 1;
+          $last_part = trim($last_part);
           // Add space padding (to center the last line of the text's first part)
           for ($i = 0; $i < $num_space; ++$i) {
             $last_part = ' ' . $last_part;
@@ -656,7 +654,6 @@ if (!function_exists('drupal_preg_match')) {
   }
 }
 
-
 /**
  * load a preset by id or name.
  * @param preset
@@ -669,13 +666,14 @@ function _textimage_preset_load($preset){
 	}
 
 	// Load preset by name
-	else{
+	else {
 		$preset=db_query("SELECT * FROM {textimage_preset} WHERE name = :name", array(':name' => $preset))->fetchAssoc();
 	}
 
-	if (empty($preset)){
+	if (empty($preset)) {
 		return FALSE;
-	}else{
+	}
+  else {
 		$preset['settings'] = unserialize($preset['settings']);
 		return $preset;
 	}
@@ -724,44 +722,41 @@ function theme_textimage_image($variables) {
 }
 
 /**
- * Textimage AHAH functionality
+ * Textimage preview AJAX functionality
  */
-function textimage_js() {
-  $output = '';
-
-  switch (arg(2)) {
-    case 'preview':
-      textimage_js_preview($output);
-      break;
-
-    case 'background':
-      textimage_js_background($output);
-      break;
-  }
-
-  print drupal_json($output);
-  exit;
-}
-
-function textimage_js_preview(&$output) {
-  $text = $_POST['settings']['preview']['text']['default'];
+function textimage_js_preview($form, $form_state) {
+  $preview['settings'] = $form_state['values']['settings'];
+  $preview['name'] = $form_state['values']['name'];
+  $preview['description'] = $form_state['values']['description'];
+  $preview['pid'] = 0;
+  $preview_text = isset($preview['settings']['preview']['text']['default'])
+    ? $preview['settings']['preview']['text']['default']
+    : t('Preview');
 
   $additional_text = array();
-  if (isset($_POST['settings']['preview']['text']['additional'])) {
-    $additional_text = $_POST['settings']['preview']['text']['additional'];
+  if (isset($preset['settings']['preview']['text']['additional'])) {
+    $additional_text = $preset['settings']['preview']['text']['additional'];
     rsort($additional_text);
   }
+  $preview = textimage_build_preview(array(
+    'preset' => $preview,
+    'text'   => $preview_text,
+    'additional_text' => $additional_text,
+  ));
 
-  $preset = array(
-    'pid' => 0,
-    'name' => $_POST['name'],
-    'settings' => $_POST['settings'],
-  );
-
-  $output = theme_textimage_image($preset, $text, $additional_text, 'png', $text, $text);
+  $commands = array();
+  $commands[] = ajax_command_html('#textimage-preview', '<img src="' . file_create_url($preview) . '?' . time() . '">');
+  return array('#type' => 'ajax', '#commands' => $commands); 
 }
 
-function textimage_js_background(&$output) {
+/**
+ * Textimage background AJAX functionality
+ */
+function textimage_js_background($form, $form_state) {
+  
+  // TODO: Needs work here.
+  
+/*
   if (empty($_POST['form_build_id'])) {
     // Invalid request.
     drupal_set_message(t('An unrecoverable error occurred.'), 'error');
@@ -817,6 +812,7 @@ function textimage_js_background(&$output) {
   $form = form_builder($_POST['form_id'], $form, $form_state);
 
   $output = drupal_render($form['settings']['preview']['text']);
+*/
 }
 
 function _textimage_js_background(&$form) {
