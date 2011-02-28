@@ -443,14 +443,17 @@ function textimage_image_from_preset($preset, $text, $additional_text = array())
   // Place result on background image if available
   elseif (is_file($background_image)) {
     $info = image_get_info($background_image);
-    $background_resource = image_toolkit_invoke('open', (object) array($background_image, $info['extension']));
+    $imagecreate = 'imagecreatefrom' . $info['extension'];
+    if (function_exists($imagecreate)) {
+      $background_resource = $imagecreate($background_image);
 
-    $text_width = imagesx($img);
-    $text_height = imagesy($img);
-    imagealphablending($background_resource, TRUE);
-    imagecopy($background_resource, $img, $background_xoffset, $background_yoffset, 0, 0, $text_width,  $text_height);
-    imagesavealpha($background_resource, TRUE);
-    $img = $background_resource;
+      $text_width = imagesx($img);
+      $text_height = imagesy($img);
+      imagealphablending($background_resource, TRUE);
+      imagecopy($background_resource, $img, $background_xoffset, $background_yoffset, 0, 0, $text_width,  $text_height);
+      imagesavealpha($background_resource, TRUE);
+      $img = $background_resource;
+    }
   }
 
   else {
@@ -747,77 +750,4 @@ function textimage_js_preview($form, $form_state) {
   $commands = array();
   $commands[] = ajax_command_html('#textimage-preview', '<img src="' . file_create_url($preview) . '?' . time() . '">');
   return array('#type' => 'ajax', '#commands' => $commands); 
-}
-
-/**
- * Textimage background AJAX functionality
- */
-function textimage_js_background($form, $form_state) {
-  
-  // TODO: Needs work here.
-  
-/*
-  if (empty($_POST['form_build_id'])) {
-    // Invalid request.
-    drupal_set_message(t('An unrecoverable error occurred.'), 'error');
-    print drupal_to_js(array('data' => theme('status_messages')));
-    exit;
-  }
-
-  // Build the new form.
-  $form_state = array('submitted' => FALSE);
-  $form_build_id = $_POST['form_build_id'];
-  $form = form_get_cache($form_build_id, $form_state);
-
-  if (!$form) {
-    // Invalid form_build_id.
-    drupal_set_message(t('An unrecoverable error occurred. This form was missing from the server cache. Try reloading the page and submitting again.'), 'error');
-    print drupal_to_js(array('data' => theme('status_messages')));
-    exit;
-  }
-
-  // form_get_cache() doesn't yield the original $form_state,
-  // but form_builder() does. Needed for retrieving the file array.
-  $built_form = $form;
-  $built_form_state = $form_state;
-
-  $built_form += array('#post' => $_POST);
-  $built_form = form_builder($_POST['form_id'], $built_form, $built_form_state);
-
-  // Clean ids, so that the same element doesn't get a different element id
-  // when rendered once more further down.
-  form_clean_id(NULL, TRUE);
-
-  foreach (element_children($form['settings']['preview']['text']) as $key) {
-    if ($key !== 'default') {
-      unset($form['settings']['preview']['text'][$key]);
-    }
-  }
-  if (is_numeric($_POST['settings']['background']['image']) && $preset = _textimage_preset_load($_POST['settings']['background']['image'])) {
-    if (!isset($form['settings']['preview']['text']['additional'])) {
-      $form['settings']['preview']['text']['additional'] = array();
-    }
-    _textimage_js_background($form);
-
-    while (is_numeric($preset['settings']['background']['image']) && $preset = _textimage_preset_load($preset['settings']['background']['image'])) {
-      _textimage_js_background($form);
-    }
-  }
-
-  form_set_cache($form_build_id, $form, $form_state);
-  $form += array(
-    '#post' => $_POST,
-    '#programmed' => FALSE,
-  );
-  $form = form_builder($_POST['form_id'], $form, $form_state);
-
-  $output = drupal_render($form['settings']['preview']['text']);
-*/
-}
-
-function _textimage_js_background(&$form) {
-  $id = count($form['settings']['preview']['text']['additional']);
-
-  $form['settings']['preview']['text']['additional'][$id] = $form['settings']['preview']['text']['default'];
-  $form['settings']['preview']['text']['additional'][$id]['#title'] = 'Additional text';
 }
