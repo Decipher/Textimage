@@ -62,11 +62,14 @@ function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
   $preset = array();
   $image_presets = array();
 
-  if ($op == 'edit' && is_numeric($pid)) {
+  if (isset($form_state['values'])) {
+    $preset = $form_state['values'];
+  }
+  elseif ($op == 'edit' && is_numeric($pid)) {
     $preset = _textimage_preset_load($pid);
   }
 
-  $fonts_path = variable_get('textimage_fonts_path', drupal_get_path('module', 'textimage') . '/fonts');
+  $fonts_path   = variable_get('textimage_fonts_path', drupal_get_path('module', 'textimage') . '/fonts');
   $font_options = _textimage_font_list($fonts_path);
 
   $images_path = variable_get('textimage_images_path', drupal_get_path('module', 'textimage') . '/backgrounds');
@@ -457,8 +460,17 @@ function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
       );
     }
   }
+  
+  $form['operations'] = array(
+    '#type'  => 'item',
+  );
+  
+  $form['operations']['submit'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Submit'),
+  );
 
-  $form['settings']['preview']['button'] = array(
+  $form['operations']['preview'] = array(
     '#type'  => 'button',
     '#value' => t('Preview'),
     '#ajax'  => array(
@@ -466,10 +478,7 @@ function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
     ),
   );
 
-  $form['submit'] = array(
-    '#type'  => 'submit',
-    '#value' => t('Submit'),
-  );
+  
   
   return $form;
 }
