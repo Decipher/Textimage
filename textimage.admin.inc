@@ -460,17 +460,14 @@ function textimage_preset_edit($form, &$form_state, $op, $pid = NULL) {
       );
     }
   }
-  
-  $form['operations'] = array(
-    '#type'  => 'item',
-  );
-  
-  $form['operations']['submit'] = array(
+
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Submit'),
   );
 
-  $form['operations']['preview'] = array(
+  $form['actions']['preview'] = array(
     '#type'  => 'button',
     '#value' => t('Preview'),
     '#ajax'  => array(
@@ -490,13 +487,13 @@ function theme_textimage_preset_edit(&$form) {
 
 function textimage_preset_edit_validate($form, &$form_state) {
   // Check for illegal characters in preset names
-  if (preg_match('/[^0-9a-zA-Z_\-]/', $form_state['values']['name'])) {
-    form_set_error('name', t('Please only use alphanumic characters, underscores (_), and hyphens (-) for preset names.'));
+  if (preg_match('/[^0-9a-zA-Z_]/', $form_state['values']['name'])) {
+    form_set_error('name', t('Please only use alphanumic characters and underscores (_) for preset names.'));
   }
 
   // Check for numbers at beginning of preset names
   if (preg_match('/^[0-9]/', $form_state['values']['name'])) {
-    form_set_error('name', t('Preset names can\'t begin with a number.'));
+    form_set_error('name', t("Preset names can't begin with a number."));
   }
 
   // Check for duplicate preset names
@@ -525,6 +522,7 @@ function textimage_preset_edit_submit($form, &$form_state) {
 
   if ($return) {
     _textimage_flush_cache();
+    drupal_theme_rebuild();
     drupal_set_message(t('Updated preset %name', array('%name' => $form_state['values']['name'])));
     drupal_goto('admin/config/media/textimage/preset/list');
   }
@@ -603,20 +601,6 @@ function textimage_preset_flush_confirm_submit($form, &$form_state) {
   drupal_goto('admin/config/media/textimage/preset/list');
 }
 
-function textimage_get_presets(){
-	static $presets = array();
-
-	if (empty($presets)) {
-		$result = db_query("SELECT pid, name, description, settings FROM {textimage_preset} ORDER BY name");
-		$presets = array();
-		foreach ($result as $preset) {
-			$preset->settings = unserialize($preset->settings);
-			$presets[$preset->name] = $preset;
-		}
-	}
-	return $presets;
-}
-
 /**
  * create a preset
  * @param name
@@ -663,9 +647,6 @@ function _textimage_preset_flush($pid) {
 
   $preset = _textimage_preset_load($pid);
   file_unmanaged_delete_recursive(variable_get('file_default_scheme', 'public') . '://textimage/' . $pid);
-
-
-
 
   db_delete('textimage_image')
     ->condition('pid', $pid)

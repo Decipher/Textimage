@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @file
+ * Utility routines of Textimage.
+ */
 
 /**
  * Generate an image containing text with the given parameters.
@@ -113,8 +117,125 @@ function textimage_text_to_image($text, $fontsize, $font, $color = array('hex' =
 	return $image;
 }
 
+/**
+ * Helper function for wrapping text (measures width).
+ */
+function textimage_measure_text_width($text, $fontsize, $font) {
+  $box = imagettfbbox($fontsize, 0, $font, $text);
+  return abs($box[4] - $box[0]) + 4;
+}
+
+/**
+ * Wrap text for rendering at a given width.
+ */
+function textimage_wrap_text($text, $fontsize, $font, $maximum_width, $align) {
+  // State variables for the search interval
+  $end = 0;
+  $begin = 0;
+  $fit = $begin;
+  if ($align == ALIGN_CENTER) {
+    // Get width of the space character
+    $space_width = textimage_measure_text_width(' ', $fontsize, $font);
+  }
+  // Note: we count in bytes for speed reasons, but maintain character boundaries.
+  while (true) {
+    // Find the next wrap point (always after trailing whitespace).
+    if (drupal_preg_match('/[' . PREG_CLASS_PUNCTUATION . '][' . PREG_CLASS_SEPARATOR . ']*|[' . PREG_CLASS_SEPARATOR . ']+/u', $text, $match, PREG_OFFSET_CAPTURE, $end)) {
+      $end = $match[0][1] + drupal_strlen($match[0][0]);
+    }
+    else {
+      $end = drupal_strlen($text);
+    }
+
+    // Fetch text, removing trailing white-space and measure it.
+    $line  = preg_replace('/[' . PREG_CLASS_SEPARATOR . ']+$/u', '', drupal_substr($text, $begin, $end - $begin));
+    $width = textimage_measure_text_width($line, $fontsize, $font);
+
+    // See if $line extends past the available space.
+    if ($width > $maximum_width) {
+      // If this is the first word, we need to truncate it.
+      if ($fit == $begin) {
+        // Cut off letters until it fits.
+        while (drupal_strlen($line) > 0 && $width > $maximum_width) {
+          $line  = drupal_substr($line, 0, -1);
+          $width = textimage_measure_text_width($line, $fontsize, $font);
+        }
+        // If no fit was found, the image is too narrow..
+        $fit = drupal_strlen($line) ? $begin + drupal_strlen($line) : $end;
+      }
+      // We have a valid fit for the next line. Insert a line-break and reset
+      // the search interval.
+      $first_part = drupal_substr($text, 0, $fit);
+      $last_part  = drupal_substr($text, $fit);
+      if ($align == ALIGN_CENTER) {        
+        $text  = $first_part . "\n" . $last_part;
+        // Get last line of the text's first part
+        $first_part_array = explode("\n", $first_part);
+        $last_index = count($first_part_array) - 1;
+        $last_line  = $first_part_array[$last_index];
+        $last_line_width = textimage_measure_text_width($last_line, $fontsize, $font);
+        // Get needed space for padding
+        $num_space = floor(($maximum_width - $last_line_width) / $space_width);
+        // Add space padding (to center the last line of the text's first part)
+        for ($i = 0; $i < $num_space; ++$i) {
+          $last_line = ' ' . $last_line;
+        }
+        $first_part_array[$last_index] = $last_line;
+        $first_part = implode("\n", $first_part_array);
+        $last_part_width = textimage_measure_text_width($last_part, $fontsize, $font);
+        if ($last_part_width < $maximum_width) {
+          // Get needed space for last part's padding
+          $num_space = floor(($maximum_width - $last_part_width) / $space_width) - 2;
+          $last_part = trim($last_part);
+          // Add space padding (to center the last line of the text's first part)
+          for ($i = 0; $i < $num_space; ++$i) {
+            $last_part = ' ' . $last_part;
+          }
+        }
+      }
+      $text  = $first_part . "\n" . $last_part;
+      $begin = ++$fit;
+      $end   = $begin;
+    }
+    else {
+      // We can fit this text. Wait for now.
+      $fit = $end;
+    }
+
+    if ($end == drupal_strlen($text)) {
+      // All text fits. No more changes are needed.
+      break;
+    }
+  }
+  return $text;
+}
 
 
+/**
+ * Unicode-safe preg_match().
+ *
+ * Search subject for a match to the regular expression given in pattern,
+ * but return offsets in characters, where preg_match would return offsets
+ * in bytes.
+ *
+ * @see http://php.net/manual/en/function.preg-match.php
+ */
+if (!function_exists('drupal_preg_match')) {
+  function drupal_preg_match($pattern, $subject, &$matches, $flags = NULL, $offset = 0) {
+    // Convert the offset value from characters to bytes.
+    $offset = strlen(drupal_substr($subject, 0, $offset));
+
+    $return_value = preg_match($pattern, $subject, $matches, $flags, $offset);
+
+    if ($return_value && ($flags & PREG_OFFSET_CAPTURE)) {
+      foreach ($matches as &$match) {
+        // Convert the offset returned by preg_match from bytes back to characters.
+        $match[1] = drupal_strlen(substr($subject, 0, $match[1]));
+      }
+    }
+    return $return_value;
+  }
+}
 
 if (!function_exists('imagerotate')) {
 	function imagerotate($im, $angle, $bgcolor) {

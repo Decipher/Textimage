@@ -3,6 +3,7 @@
 
 /**
  * @file
+ * Provides text to image manipulations.
  */
 
 /**
@@ -112,13 +113,21 @@ function textimage_theme(){
     ),
 	);
 
-	module_load_include('inc', 'textimage', 'textimage.admin');
-
-	
 	foreach (textimage_get_presets() as $preset) {
 		$theme['textimage_formatter_textimage_' . $preset->name] = array(
-			'arguments' => array('element' => NULL),
-			'function' => 'theme_textimage_formatter',
+      'variables' => array(
+        'preset'  => $preset->name,
+        'pid' => $preset->pid,
+        'text' => NULL,
+        'additional_text' => NULL,
+        'fid' => 0,
+        'alt' => NULL,
+        'uri' => NULL,
+        'title'    => NULL,
+        'filename' => NULL,
+        'filemime' => 'image/png',
+			),
+			'function' => 'textimage_preset_formatter',
 		);
 	}
 	
@@ -283,28 +292,45 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
 		drupal_set_message($message, 'error');
 		return FALSE;
 	}
-  
+
+  if (is_numeric($preset)) {
+    $preset = _textimage_preset_load($preset);
+  }
+  elseif(!is_array($preset))  {
+    // This will use value from static variable 
+    // and will possibly avoid database query
+    $presets = textimage_get_presets();
+    $preset  = (array) $presets[$preset];
+  }
 	// Load preset
-	if (!is_array($preset) && !$preset = _textimage_preset_load($preset)) {
+	if (!is_array($preset) && !$preset) {
 		$message = t('Unable to generate Textimage as the preset %preset is not defined.', array('%preset' => $preset));
 		watchdog('textimage', $message, array(), WATCHDOG_ERROR);
 		drupal_set_message($message, 'error');
 		return FALSE;
 	}
-	
-	$result = db_query("SELECT file FROM {textimage_image} WHERE pid = :pid AND data = :data", 
-		array(
-			':pid'  => $preset['pid'],
-			':data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text)),
-		)
-	)->fetchObject();
+	$directory = variable_get('file_default_scheme', 'public') . '://textimage/' . $preset['pid'] . '/';
+  if (empty($file_uri)) {
+    $result = db_query("SELECT file FROM {textimage_image} WHERE pid = :pid AND data = :data", 
+      array(
+        ':pid'  => $preset['pid'],
+        ':data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text)),
+      )
+    )->fetchObject();
+  }
+  else {
+    $filename  = explode('/', $file_uri);
+    $filename  = $filename[count($filename) - 1];
+    $file_path = "$directory$filename.$format";
+    $result    = (object) array('file' => $file_path);
+  }
 
 	//CHECK IF FILE EXIST
 	$file_missing = false;
-	if($result && !is_file($result->file)){
+	if (empty($result) || (!empty($result) && !is_file(drupal_realpath($result->file)))) {
 		$file_missing = true;
 	}
-	
+
 	if ((!$result && (user_access('create textimages') || $method == 'theme')) || $preset['pid'] == 0 || $file_missing) {
 		// Generate the image resource
 		$img = textimage_image_from_preset($preset, $text, $additional_text);
@@ -313,24 +339,24 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
       if (empty($filename)) {
         $filename = REQUEST_TIME . rand(1000, 9999) . '.' . $format;
       }
-      $directory = variable_get('file_default_scheme', 'public') . '://textimage/' . $preset['pid'];
       // Save the result so we don't have to recreate
-      $file_path = $directory. '/' . $filename;
+      $file_path = $directory . $filename;
+      $file_path = textimage_save_image($img, $file_path, $format);
     }
     else {
-      $file_path = $file_uri;
+      $file_uri  = textimage_save_image($img, $file_uri, $format);
+      $path = file_stream_wrapper_uri_normalize($directory);
+      file_prepare_directory($path, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+      file_unmanaged_copy($file_uri, $file_path, FILE_EXISTS_REPLACE);
     }
-		$file_path = textimage_save_image($img, $file_path, $format);
-    // Don't add the custom defined file path
-		if (!$file_missing && empty($file_uri)) { 
-			if ($preset['pid'] !== 0) {
-				db_insert('textimage_image')
-				->fields(array(
-					'pid' => $preset['pid'],
-					'file' =>  $file_path,
-					'data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
-				))->execute();
-			}
+
+		if ($file_missing && $preset['pid'] !== 0) {
+      db_insert('textimage_image')
+      ->fields(array(
+        'pid' => $preset['pid'],
+        'file' =>  $file_path,
+        'data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
+      ))->execute();
 		}
 		return $file_path;
 		
@@ -346,7 +372,7 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
 
 function textimage_build_preview($variables) {
 	$image = textimage_image_from_preset($variables['preset'], $variables['text'], $variables['additional_text']);
-	$file_path = variable_get('file_default_scheme', 'public') . '://textimage/preview.png';
+	$file_path = variable_get('file_default_scheme', 'public') . '://textimage/preview';
 	return textimage_save_image($image, $file_path, 'png');
 }
 
@@ -521,7 +547,6 @@ function textimage_image_add_stroke($img, $thickness, $color, $text_opacity) {
   return $img;
 }
 
-
 /**
  * Create the image directory relative to the 'files' dir - if user specified one
  * Won't allow form submit unless the directory exists & is writable
@@ -539,138 +564,19 @@ function textimage_directory_check($directory_path) {
 }
 
 /**
- * Helper function for wrapping text (measures width).
- */
-function textimage_measure_text_width($text, $fontsize, $font) {
-  $box = imagettfbbox($fontsize, 0, $font, $text);
-  return abs($box[4] - $box[0]) + 4;
-}
-
-/**
- * Wrap text for rendering at a given width.
- */
-function textimage_wrap_text($text, $fontsize, $font, $maximum_width, $align) {
-  // State variables for the search interval
-  $end = 0;
-  $begin = 0;
-  $fit = $begin;
-  if ($align == ALIGN_CENTER) {
-    // Get width of the space character
-    $space_width = textimage_measure_text_width(' ', $fontsize, $font);
-  }
-  // Note: we count in bytes for speed reasons, but maintain character boundaries.
-  while (true) {
-    // Find the next wrap point (always after trailing whitespace).
-    if (drupal_preg_match('/[' . PREG_CLASS_PUNCTUATION . '][' . PREG_CLASS_SEPARATOR . ']*|[' . PREG_CLASS_SEPARATOR . ']+/u', $text, $match, PREG_OFFSET_CAPTURE, $end)) {
-      $end = $match[0][1] + drupal_strlen($match[0][0]);
-    }
-    else {
-      $end = drupal_strlen($text);
-    }
-
-    // Fetch text, removing trailing white-space and measure it.
-    $line  = preg_replace('/[' . PREG_CLASS_SEPARATOR . ']+$/u', '', drupal_substr($text, $begin, $end - $begin));
-    $width = textimage_measure_text_width($line, $fontsize, $font);
-
-    // See if $line extends past the available space.
-    if ($width > $maximum_width) {
-      // If this is the first word, we need to truncate it.
-      if ($fit == $begin) {
-        // Cut off letters until it fits.
-        while (drupal_strlen($line) > 0 && $width > $maximum_width) {
-          $line  = drupal_substr($line, 0, -1);
-          $width = textimage_measure_text_width($line, $fontsize, $font);
-        }
-        // If no fit was found, the image is too narrow..
-        $fit = drupal_strlen($line) ? $begin + drupal_strlen($line) : $end;
-      }
-      // We have a valid fit for the next line. Insert a line-break and reset
-      // the search interval.
-      $first_part = drupal_substr($text, 0, $fit);
-      $last_part  = drupal_substr($text, $fit);
-      if ($align == ALIGN_CENTER) {        
-        $text  = $first_part . "\n" . $last_part;
-        // Get last line of the text's first part
-        $first_part_array = explode("\n", $first_part);
-        $last_index = count($first_part_array) - 1;
-        $last_line  = $first_part_array[$last_index];
-        $last_line_width = textimage_measure_text_width($last_line, $fontsize, $font);
-        // Get needed space for padding
-        $num_space = floor(($maximum_width - $last_line_width) / $space_width) - 1;
-        // Add space padding (to center the last line of the text's first part)
-        for ($i = 0; $i < $num_space; ++$i) {
-          $last_line = ' ' . $last_line;
-        }
-        $first_part_array[$last_index] = $last_line;
-        $first_part = implode("\n", $first_part_array);
-        $last_part_width = textimage_measure_text_width($last_part, $fontsize, $font);
-        if ($last_part_width < $maximum_width) {
-          // Get needed space for last part's padding
-          $num_space = floor(($maximum_width - $last_part_width) / $space_width) - 1;
-          $last_part = trim($last_part);
-          // Add space padding (to center the last line of the text's first part)
-          for ($i = 0; $i < $num_space; ++$i) {
-            $last_part = ' ' . $last_part;
-          }
-        }
-      }
-      $text  = $first_part . "\n" . $last_part;
-      $begin = ++$fit;
-      $end   = $begin;
-    }
-    else {
-      // We can fit this text. Wait for now.
-      $fit = $end;
-    }
-
-    if ($end == drupal_strlen($text)) {
-      // All text fits. No more changes are needed.
-      break;
-    }
-  }
-  return $text;
-}
-
-/**
- * Unicode-safe preg_match().
- *
- * Search subject for a match to the regular expression given in pattern,
- * but return offsets in characters, where preg_match would return offsets
- * in bytes.
- *
- * @see http://php.net/manual/en/function.preg-match.php
- */
-if (!function_exists('drupal_preg_match')) {
-  function drupal_preg_match($pattern, $subject, &$matches, $flags = NULL, $offset = 0) {
-    // Convert the offset value from characters to bytes.
-    $offset = strlen(drupal_substr($subject, 0, $offset));
-
-    $return_value = preg_match($pattern, $subject, $matches, $flags, $offset);
-
-    if ($return_value && ($flags & PREG_OFFSET_CAPTURE)) {
-      foreach ($matches as &$match) {
-        // Convert the offset returned by preg_match from bytes back to characters.
-        $match[1] = drupal_strlen(substr($subject, 0, $match[1]));
-      }
-    }
-    return $return_value;
-  }
-}
-
-/**
  * load a preset by id or name.
  * @param preset
  *    preset id or name.
  */
-function _textimage_preset_load($preset){
+function _textimage_preset_load($preset) {
 	// Load preset by id
 	if (is_numeric($preset)) {
-		$preset=db_query('SELECT * FROM {textimage_preset} WHERE pid = :pid', array(':pid' => $preset))->fetchAssoc();
+		$preset = db_query('SELECT * FROM {textimage_preset} WHERE pid = :pid', array(':pid' => $preset))->fetchAssoc();
 	}
 
 	// Load preset by name
 	else {
-		$preset=db_query("SELECT * FROM {textimage_preset} WHERE name = :name", array(':name' => $preset))->fetchAssoc();
+		$preset = db_query("SELECT * FROM {textimage_preset} WHERE name = :name", array(':name' => $preset))->fetchAssoc();
 	}
 
 	if (empty($preset)) {
@@ -691,7 +597,6 @@ function _textimage_preset_load($preset){
 function textimage_field_formatter_info(){
 	$formatters = array();
 
-	module_load_include('inc', 'textimage', 'textimage.admin');
 	foreach (textimage_get_presets() as $preset) {
 		$formatters['textimage_' . $preset->name] = array(
 			'label' => t('Textimage:') . ' ' . $preset->name,
@@ -709,6 +614,56 @@ function theme_textimage_formatter($element) {
   }
 
   return theme('textimage_image', drupal_substr($element['#formatter'], 10), $element['#item']['safe'], array(), 'png', $alt, $title);
+}
+
+/**
+ * Default theme callback for all preset.
+ */
+function textimage_preset_formatter($variables) {
+  $path = variable_get('file_default_scheme', 'public') . '://textimage/' . $variables['pid'] . '/' . $variables['filename'];
+  if (is_file(drupal_realpath($path))) {
+    return $path;
+  }
+  else {
+    // Try to replace the cache of previously
+    // assigned preset for this image
+    $result = db_query('SELECT pid, data, file FROM {textimage_image} WHERE file LIKE :file', array(':file'  => '%/' . $variables['filename']))->fetchObject();
+    if (!empty($result)) {
+      $format = str_replace('image/', '', $variables['filemime']);
+      $uri = preg_replace('/(.' . $format . '$)/', '', $variables['uri']);
+      file_unmanaged_delete($result->file);
+      db_delete('textimage_image')
+        ->condition('pid', $result->pid)
+        ->condition('file', $result->file)
+        ->condition('data', $result->data)
+        ->execute();
+      $data = unserialize($result->data);
+      return textimage_build_image('theme', 
+        $variables['preset'], 
+        $data['text'], 
+        $data['additional_text'], 
+        $format, 
+        $uri
+      );
+    }
+    elseif (!empty($variables['text'])) {
+      $format = str_replace('image/', '', $variables['filemime']);
+      $uri = preg_replace('/(.' . $format . '$)/', '', $variables['uri']);
+      // Try to create new textimage from defined 'text'
+      return textimage_build_image('theme', 
+        $variables['preset'], 
+        $variables['text'], 
+        !empty($variables['additional_text']) ? $variables['additional_text'] : array(), 
+        $format, 
+        $uri
+      );
+    }
+    else {
+      $message = t('Cached Textimage %file image does not exist or has been flushed.', array('%file' => $variables['filename']));
+      watchdog('textimage', $message, array(), WATCHDOG_ERROR);
+      return '';
+    }
+  }
 }
 
 /**
@@ -750,4 +705,18 @@ function textimage_js_preview($form, $form_state) {
   $commands = array();
   $commands[] = ajax_command_html('#textimage-preview', '<img src="' . file_create_url($preview) . '?' . time() . '">');
   return array('#type' => 'ajax', '#commands' => $commands); 
+}
+
+function textimage_get_presets() {
+	$presets = &drupal_static(__FUNCTION__);
+
+	if (!isset($presets)) {
+		$result  = db_query('SELECT pid, name, description, settings FROM {textimage_preset} ORDER BY name');
+		$presets = array();
+		foreach ($result as $preset) {
+			$preset->settings = unserialize($preset->settings);
+			$presets[$preset->name] = $preset;
+		}
+	}
+	return $presets;
 }
