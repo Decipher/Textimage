@@ -116,16 +116,11 @@ function textimage_theme(){
 	foreach (textimage_get_presets() as $preset) {
 		$theme['textimage_formatter_textimage_' . $preset->name] = array(
       'variables' => array(
-        'preset'  => $preset->name,
-        'pid' => $preset->pid,
-        'text' => NULL,
-        'additional_text' => NULL,
-        'fid' => 0,
-        'alt' => NULL,
-        'uri' => NULL,
-        'title'    => NULL,
-        'filename' => NULL,
-        'filemime' => 'image/png',
+        'preset'  => $preset->name, // Selected preset name
+        'pid'   => $preset->pid,    // Selected preset ID
+        'image' => new stdClass(),  // image object
+        'text'  => NULL,            // Text for new creation of textimage
+        'additional_text' => array(), // Additional text for new creation of textimage
 			),
 			'function' => 'textimage_preset_formatter',
 		);
@@ -619,51 +614,52 @@ function theme_textimage_formatter($element) {
 /**
  * Default theme callback for all preset.
  */
-function textimage_preset_formatter($variables) {
-  $path = variable_get('file_default_scheme', 'public') . '://textimage/' . $variables['pid'] . '/' . $variables['filename'];
-  if (is_file(drupal_realpath($path))) {
-    return $path;
-  }
-  else {
-    // Try to replace the cache of previously
-    // assigned preset for this image
-    $result = db_query('SELECT pid, data, file FROM {textimage_image} WHERE file LIKE :file', array(':file'  => '%/' . $variables['filename']))->fetchObject();
-    if (!empty($result)) {
-      $format = str_replace('image/', '', $variables['filemime']);
-      $uri = preg_replace('/(.' . $format . '$)/', '', $variables['uri']);
-      file_unmanaged_delete($result->file);
-      db_delete('textimage_image')
-        ->condition('pid', $result->pid)
-        ->condition('file', $result->file)
-        ->condition('data', $result->data)
-        ->execute();
-      $data = unserialize($result->data);
-      return textimage_build_image('theme', 
-        $variables['preset'], 
-        $data['text'], 
-        $data['additional_text'], 
-        $format, 
-        $uri
-      );
-    }
-    elseif (!empty($variables['text'])) {
-      $format = str_replace('image/', '', $variables['filemime']);
-      $uri = preg_replace('/(.' . $format . '$)/', '', $variables['uri']);
-      // Try to create new textimage from defined 'text'
-      return textimage_build_image('theme', 
-        $variables['preset'], 
-        $variables['text'], 
-        !empty($variables['additional_text']) ? $variables['additional_text'] : array(), 
-        $format, 
-        $uri
-      );
+function textimage_preset_formatter($variables) {dsm($variables);
+  $image = (array) $variables['image'];dsm($image);
+  if (!empty($image)) {
+    $path = variable_get('file_default_scheme', 'public') . '://textimage/' . $variables['pid'] . '/' . $image['filename'];
+    if (is_file(drupal_realpath($path))) {
+      return $path;
     }
     else {
-      $message = t('Cached Textimage %file image does not exist or has been flushed.', array('%file' => $variables['filename']));
-      watchdog('textimage', $message, array(), WATCHDOG_ERROR);
-      return '';
+      // Try to replace the cache of previously
+      // assigned preset for this image
+      $result = db_query('SELECT pid, data, file FROM {textimage_image} WHERE file LIKE :file', array(':file'  => '%/' . $image['filename']))->fetchObject();
+      if (!empty($result)) {
+        $format = str_replace('image/', '', $image['filemime']);
+        $uri = preg_replace('/(.' . $format . '$)/', '', $image['uri']);
+        file_unmanaged_delete($result->file);
+        db_delete('textimage_image')
+          ->condition('pid', $result->pid)
+          ->condition('file', $result->file)
+          ->condition('data', $result->data)
+          ->execute();
+        $data = unserialize($result->data);
+        return textimage_build_image('theme', 
+          $variables['preset'], 
+          $data['text'], 
+          $data['additional_text'], 
+          $format, 
+          $uri
+        );
+      }
+      elseif (!empty($variables['text'])) {
+        $format = str_replace('image/', '', $image['filemime']);
+        $uri = preg_replace('/(.' . $format . '$)/', '', $image['uri']);
+        // Try to create new textimage from defined 'text'
+        return textimage_build_image('theme', 
+          $variables['preset'], 
+          $variables['text'], 
+          !empty($variables['additional_text']) ? $variables['additional_text'] : array(), 
+          $format, 
+          $uri
+        );
+      }
     }
   }
+  $message = t('Cached Textimage image does not exist or has been flushed.');
+  watchdog('textimage', $message, array(), WATCHDOG_ERROR);
+  return '';
 }
 
 /**
