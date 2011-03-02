@@ -614,8 +614,8 @@ function theme_textimage_formatter($element) {
 /**
  * Default theme callback for all preset.
  */
-function textimage_preset_formatter($variables) {dsm($variables);
-  $image = (array) $variables['image'];dsm($image);
+function textimage_preset_formatter($variables) {
+  $image = (array) $variables['image'];
   if (!empty($image)) {
     $path = variable_get('file_default_scheme', 'public') . '://textimage/' . $variables['pid'] . '/' . $image['filename'];
     if (is_file(drupal_realpath($path))) {
