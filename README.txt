@@ -38,7 +38,7 @@ Usage
     'text'   => 'Text', 
     'additional_text' => array('Additional', 'Text'), 
     'format'    => 'png', 
-    'file_path' => 'public://myimages/sub_folder/image-filename'
+    'file_path' => 'public://myimages/sub_folder/image-filename' // Don't include the file extension.
    ));
 
 2. via CCK/Views formatter:

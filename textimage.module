@@ -247,12 +247,10 @@ function textimage_perm() {
  *   in JPG format.
  *
  */
-function textimage_image(){
-	
+function textimage_image() {
 	$pattern = '/' . str_replace('/', '\/', base_path() . '(\?q=)?' . variable_get('file_default_scheme', 'public') . '://textimage/') . '/';
-  	$args = explode('/', preg_replace($pattern, '', request_uri()));
-
-	$preset = array_shift($args);
+  $args    = explode('/', preg_replace($pattern, '', request_uri()));
+	$preset  = array_shift($args);
 	if (is_numeric($preset)) {
 		drupal_not_found();
 		exit;

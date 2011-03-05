@@ -636,20 +636,37 @@ function _textimage_preset_delete($id) {
 }
 
 /**
- * flush cached media for a preset.
- * @param pid
- *   a preset id.
+ * Flush cached media for a preset.
+ * @param $pid
+ *   A preset id.
  */
 function _textimage_preset_flush($pid) {
   if ($pid !== 0) {
     drupal_set_message(t('Flushed Preset Images (ID: @pid)', array('@pid' => $pid)));
   }
-
-  $preset = _textimage_preset_load($pid);
   file_unmanaged_delete_recursive(variable_get('file_default_scheme', 'public') . '://textimage/' . $pid);
-
   db_delete('textimage_image')
     ->condition('pid', $pid)
+    ->execute();
+}
+
+/**
+ * Clear a cached image.
+ * @param $preset
+ *   A preset name.
+ * @param $file
+ *   Image file.
+ */
+function _textimage_clear_cache_image($preset, $file) {
+  $textimage_presets = textimage_get_presets();
+  $pid = $textimage_presets[$preset]->pid;
+  $textimage_cache_dir = variable_get('file_default_scheme', 'public') . '://textimage/' . $pid;
+  $uri = "$textimage_cache_dir/$file";
+  // Clear textimage cache for this image
+  file_unmanaged_delete($uri);
+  db_delete('textimage_image')
+    ->condition('pid', $pid)
+    ->condition('file', $uri)
     ->execute();
 }
 
