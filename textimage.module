@@ -209,13 +209,23 @@ function textimage_menu() {
 		'file'   => 'textimage.admin.inc',
 	);
 
+  // Generate image derivatives of publicly available files.
+  $directory_path  = file_stream_wrapper_get_instance_by_scheme(variable_get('file_default_scheme', 'public'))->getDirectoryPath();
+  $directory_count = count(explode('/', $directory_path));
+  $items[$directory_path . '/textimage'] = array(
+    'title' => 'Generate textimage',
+    'page callback' => 'textimage_deliver',
+    'page arguments' => array($directory_count + 1, $directory_count + 2),
+    'access arguments' => array('create textimages'),
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
 /**
- * Implements hook_perm().
+ * Implements hook_permission().
  */
-function textimage_perm() {
+function textimage_permission() {
 	return array(
 		'create textimages' => array(
 			'title' => t('Create Textimages'),
@@ -337,19 +347,32 @@ function textimage_build_image($method, $preset, $text, $additional_text = array
       $file_path = textimage_save_image($img, $file_path, $format);
     }
     else {
-      $file_uri  = textimage_save_image($img, $file_uri, $format);
+      $file_uri = textimage_save_image($img, $file_uri, $format);
       $path = file_stream_wrapper_uri_normalize($directory);
       file_prepare_directory($path, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
-      file_unmanaged_copy($file_uri, $file_path, FILE_EXISTS_REPLACE);
+      if ("$path/$filename.$format" != $file_uri) {
+        file_unmanaged_copy($file_uri, $file_path, FILE_EXISTS_REPLACE);
+      }
     }
 
 		if ($file_missing && $preset['pid'] !== 0) {
-      db_insert('textimage_image')
-      ->fields(array(
-        'pid' => $preset['pid'],
-        'file' =>  $file_path,
-        'data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
-      ))->execute();
+      try {
+        db_insert('textimage_image')
+          ->fields(array(
+            'pid' => $preset['pid'],
+            'file' =>  $file_path,
+            'data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
+          ))->execute();
+      }
+      catch(Exception $error) {
+        db_update('textimage_image')
+          ->fields(array(
+            'data' => serialize(array('format' => $format, 'text' => $text, 'additional_text' => $additional_text))
+          ))
+          ->condition('pid', $preset['pid'])
+          ->condition('file', $file_path)
+          ->execute();
+      }
 		}
 		return $file_path;
 		
@@ -609,6 +632,24 @@ function theme_textimage_formatter($element) {
   return theme('textimage_image', drupal_substr($element['#formatter'], 10), $element['#item']['safe'], array(), 'png', $alt, $title);
 }
 
+function textimage_deliver($pid, $filename, $display_img = TRUE) {
+  $format   = explode('.', $filename);
+  $filemime = 'image/' . $format[count($format) - 1];
+  $img_uri  = textimage_preset_formatter(array(
+    'pid' => $pid, 
+    'preset' => $pid, 
+    'image'  => array(
+      'uri' => variable_get('file_default_scheme', 'public') . "://textimage/$pid/$filename",
+      'filename' => $filename,
+      'filemime' => $filemime,
+    ),
+  ));
+  if ($display_img) {
+    $img_info = image_get_info(drupal_realpath($img_uri));
+    file_transfer($img_uri, array('Content-Type' => $filemime));
+  }
+}
+
 /**
  * Default theme callback for all preset.
  */
@@ -620,18 +661,11 @@ function textimage_preset_formatter($variables) {
       return $path;
     }
     else {
-      // Try to replace the cache of previously
-      // assigned preset for this image
-      $result = db_query('SELECT pid, data, file FROM {textimage_image} WHERE file LIKE :file', array(':file'  => '%/' . $image['filename']))->fetchObject();
+      // Image was flushed, recreate the textimage from its data.
+      $result = db_query('SELECT pid, data FROM {textimage_image} WHERE file LIKE :file', array(':file'  => $path))->fetchObject();
       if (!empty($result)) {
         $format = str_replace('image/', '', $image['filemime']);
-        $uri = preg_replace('/(.' . $format . '$)/', '', $image['uri']);
-        file_unmanaged_delete($result->file);
-        db_delete('textimage_image')
-          ->condition('pid', $result->pid)
-          ->condition('file', $result->file)
-          ->condition('data', $result->data)
-          ->execute();
+        $uri  = preg_replace('/(.' . $format . '$)/', '', $image['uri']);
         $data = unserialize($result->data);
         return textimage_build_image('theme', 
           $variables['preset'], 
@@ -641,17 +675,40 @@ function textimage_preset_formatter($variables) {
           $uri
         );
       }
-      elseif (!empty($variables['text'])) {
-        $format = str_replace('image/', '', $image['filemime']);
-        $uri = preg_replace('/(.' . $format . '$)/', '', $image['uri']);
-        // Try to create new textimage from defined 'text'
-        return textimage_build_image('theme', 
-          $variables['preset'], 
-          $variables['text'], 
-          !empty($variables['additional_text']) ? $variables['additional_text'] : array(), 
-          $format, 
-          $uri
-        );
+      else {
+        // Try to replace the cache of previously
+        // assigned preset for this image
+        $result = db_query('SELECT pid, data, file FROM {textimage_image} WHERE file LIKE :file', array(':file'  => '%/' . $image['filename']))->fetchObject();
+        if (!empty($result)) {
+          $format = str_replace('image/', '', $image['filemime']);
+          $uri = preg_replace('/(.' . $format . '$)/', '', $image['uri']);
+          file_unmanaged_delete($result->file);
+          db_delete('textimage_image')
+            ->condition('pid', $result->pid)
+            ->condition('file', $result->file)
+            ->condition('data', $result->data)
+            ->execute();
+          $data = unserialize($result->data);
+          return textimage_build_image('theme', 
+            $variables['preset'], 
+            $data['text'], 
+            $data['additional_text'], 
+            $format, 
+            $uri
+          );
+        }
+        elseif (!empty($variables['text'])) {
+          $format = str_replace('image/', '', $image['filemime']);
+          $uri = preg_replace('/(.' . $format . '$)/', '', $image['uri']);
+          // Try to create new textimage from defined 'text'
+          return textimage_build_image('theme', 
+            $variables['preset'], 
+            $variables['text'], 
+            !empty($variables['additional_text']) ? $variables['additional_text'] : array(), 
+            $format, 
+            $uri
+          );
+        }
       }
     }
   }

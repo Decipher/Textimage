@@ -504,8 +504,6 @@ function textimage_preset_edit_validate($form, &$form_state) {
 }
 
 function textimage_preset_edit_submit($form, &$form_state) {
-  _textimage_preset_flush(0);
-
   if (isset($form_state['storage']['validate_error'])) {
     return;
   }
@@ -621,45 +619,64 @@ function _textimage_preset_create($name, $description, $settings) {
  */
 function _textimage_preset_update($id, $name, $description, $settings) {
   $name = check_plain($name);
-  _textimage_preset_flush($id);
-  return db_update('textimage_preset')
+  $result = db_update('textimage_preset')
     ->fields(array('name' => $name, 'description' => $description, 'settings' => serialize($settings)))
     ->condition('pid', $id)
     ->execute();
+  _textimage_preset_flush($id, FALSE);
+  return $result;
 }
 
 function _textimage_preset_delete($id) {
-  _textimage_preset_flush($id);
-  return db_delete('textimage_preset')
+  $result = db_delete('textimage_preset')
     ->condition('pid', $id)
     ->execute();
+  _textimage_preset_flush($id);
+  return $result;
 }
 
 /**
  * Flush cached media for a preset.
  * @param $pid
  *   A preset id.
+ * @param $delete_data
+ *   Boolean whether to delete textimage data or not
  */
-function _textimage_preset_flush($pid) {
+function _textimage_preset_flush($pid, $delete_data = TRUE) {
   if ($pid !== 0) {
     drupal_set_message(t('Flushed Preset Images (ID: @pid)', array('@pid' => $pid)));
   }
   file_unmanaged_delete_recursive(variable_get('file_default_scheme', 'public') . '://textimage/' . $pid);
-  db_delete('textimage_image')
-    ->condition('pid', $pid)
-    ->execute();
+  $query = db_query('SELECT file FROM {textimage_image} WHERE pid LIKE :pid', array(':pid'  => $pid))->fetchAll();
+  foreach ($query as $file_obj) {
+    // Clear cached versions of this image file in all styles.
+    image_path_flush($file_obj->file);
+    $filename = explode('/', $file_obj->file);
+    $filename = $filename[count($filename) - 1];
+    textimage_deliver($pid, $filename, FALSE);
+  }
+  if ($delete_data) {
+    db_delete('textimage_image')
+      ->condition('pid', $pid)
+      ->execute();
+  }
 }
 
 /**
  * Clear a cached image.
  * @param $preset
- *   A preset name.
+ *   A preset name or ID.
  * @param $file
  *   Image file.
  */
 function _textimage_clear_cache_image($preset, $file) {
-  $textimage_presets = textimage_get_presets();
-  $pid = $textimage_presets[$preset]->pid;
+  if (is_numeric($preset)) {
+    $pid = $preset;
+  }
+  else {
+    $textimage_presets = textimage_get_presets();
+    $pid = $textimage_presets[$preset]->pid;
+  }
   $textimage_cache_dir = variable_get('file_default_scheme', 'public') . '://textimage/' . $pid;
   $uri = "$textimage_cache_dir/$file";
   // Clear textimage cache for this image
