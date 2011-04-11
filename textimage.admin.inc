@@ -623,7 +623,7 @@ function _textimage_preset_update($id, $name, $description, $settings) {
     ->fields(array('name' => $name, 'description' => $description, 'settings' => serialize($settings)))
     ->condition('pid', $id)
     ->execute();
-  _textimage_preset_flush($id, FALSE);
+  _textimage_preset_flush($id);
   return $result;
 }
 
@@ -631,7 +631,7 @@ function _textimage_preset_delete($id) {
   $result = db_delete('textimage_preset')
     ->condition('pid', $id)
     ->execute();
-  _textimage_preset_flush($id);
+  _textimage_preset_flush($id, TRUE);
   return $result;
 }
 
@@ -642,23 +642,26 @@ function _textimage_preset_delete($id) {
  * @param $delete_data
  *   Boolean whether to delete textimage data or not
  */
-function _textimage_preset_flush($pid, $delete_data = TRUE) {
+function _textimage_preset_flush($pid, $delete_data = FALSE) {
   if ($pid !== 0) {
     drupal_set_message(t('Flushed Preset Images (ID: @pid)', array('@pid' => $pid)));
   }
   file_unmanaged_delete_recursive(variable_get('file_default_scheme', 'public') . '://textimage/' . $pid);
-  $query = db_query('SELECT file FROM {textimage_image} WHERE pid LIKE :pid', array(':pid'  => $pid))->fetchAll();
-  foreach ($query as $file_obj) {
-    // Clear cached versions of this image file in all styles.
-    image_path_flush($file_obj->file);
-    $filename = explode('/', $file_obj->file);
-    $filename = $filename[count($filename) - 1];
-    textimage_deliver($pid, $filename, FALSE);
-  }
   if ($delete_data) {
     db_delete('textimage_image')
       ->condition('pid', $pid)
       ->execute();
+  }
+  else {
+    $query = db_query('SELECT file FROM {textimage_image} WHERE pid LIKE :pid', array(':pid'  => $pid))->fetchAll();
+    foreach ($query as $file_obj) {
+      // Clear cached versions of this image file in all styles.
+      image_path_flush($file_obj->file);
+      $filename = explode('/', $file_obj->file);
+      $filename = $filename[count($filename) - 1];
+      // Restore images in reference with images stored at {textimage_image}
+      textimage_deliver($pid, $filename, FALSE);
+    }
   }
 }
 
